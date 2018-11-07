@@ -1,0 +1,206 @@
+time="2018-11-06 14:35:51.910" level=info msg="退出 interrupt" line="task/Info.go:42" package=tsak
+time="2018-11-06 14:35:56.511" level=info msg="welcome to main" line="public.info/main.go:25" package=main
+time="2018-11-06 14:36:03.268" level=info msg="start running HandleGETServer " line="task/Info.go:65" package=tsak
+time="2018-11-06 14:36:03.269" level=info msg="172.16.200.21:8080 Connection successful" line="task/Info.go:66" package=tsak
+time="2018-11-06 14:36:03.269" level=info msg="start running switch" line="task/Info.go:79" package=tsak
+time="2018-11-06 14:36:03.269" level=info msg="start running getQuery" line="task/Info.go:82" package=tsak
+time="2018-11-06 14:36:03.269" level=info msg="start running DealQuerycmd " line="server/DealHander.go:62" package=server
+time="2018-11-06 14:36:03.269" level=info msg="start matching information: [123.2.2.1]" line="server/DealHander.go:63" package=server
+time="2018-11-06 14:36:03.269" level=info msg="start running GeoliteLookup " line="server/DealHander.go:16" package=server
+time="2018-11-06 14:36:03.269" level=info msg=123.2.2.1 line="server/DealHander.go:17" package=server
+time="2018-11-06 14:36:03.269" level=info msg="GeoliteLookup running over" line="server/DealHander.go:29" package=server
+time="2018-11-06 14:36:03.269" level=info msg="dealQuerycmd  Country other " line="server/DealHander.go:174" package=server
+time="2018-11-06 14:36:03.270" level=info msg="&{{2146782 map[en:Thornlands]} {OC 6255151 map[fr:Océanie ja:オセアニア pt-BR:Oceania ru:Океания zh-CN:大洋洲 de:Ozeanien en:Oceania es:Oceanía]} {2077456 false AU map[de:Australien en:Australia es:Australia fr:Australie ja:オーストラリア pt-BR:Austrália ru:Австралия zh-CN:澳大利亚]} {1000 -27.5575 153.2648 0 Australia/Brisbane} {4164} {2077456 false AU map[zh-CN:澳大利亚 de:Australien en:Australia es:Australia fr:Australie ja:オーストラリア pt-BR:Austrália ru:Австралия]} {0 false  map[] } [{2152274 QLD map[en:Queensland pt-BR:Queensland ru:Квинсленд]}] {false false}}" line="server/DealHander.go:176" package=server
+time="2018-11-06 14:36:03.270" level=info msg="Query IP information does not exist!:123.2.2.1\n" line="server/DealHander.go:177" package=server
+time="2018-11-06 14:36:03.270" level=info msg="HandleIPServer running over" line="task/Info.go:94" package=tsak
+time="2018-11-06 14:38:21.291" level=info msg="start running HandleGETServer " line="task/Info.go:65" package=tsak
+time="2018-11-06 14:38:21.291" level=info msg="172.16.200.21:8080 Connection successful" line="task/Info.go:66" package=tsak
+time="2018-11-06 14:38:21.291" level=info msg="start running switch" line="task/Info.go:79" package=tsak
+time="2018-11-06 14:38:21.291" level=info msg="start running postQuery" line="task/Info.go:86" package=tsak
+time="2018-11-06 14:38:21.291" level=info msg="start running DealQuerycmd " line="server/DealHander.go:62" package=server
+time="2018-11-06 14:38:21.291" level=info msg="start matching information: [99.2.2.1]" line="server/DealHander.go:63" package=server
+time="2018-11-06 14:38:21.291" level=info msg="start running GeoliteLookup " line="server/DealHander.go:16" package=server
+time="2018-11-06 14:38:21.291" level=info msg=99.2.2.1 line="server/DealHander.go:17" package=server
+time="2018-11-06 14:38:21.292" level=info msg="GeoliteLookup running over" line="server/DealHander.go:29" package=server
+time="2018-11-06 14:38:21.292" level=info msg="dealQuerycmd  Country US(America)" line="server/DealHander.go:90" package=server
+time="2018-11-06 14:38:21.292" level=info msg="start matching City proper " line="server/DealHander.go:36" package=server
+time="2018-11-06 14:38:21.292" level=info msg="HandleIPServer running over" line="task/Info.go:94" package=tsak
+time="2018-11-06 14:39:25.428" level=info msg="start running HandleGETServer " line="task/Info.go:65" package=tsak
+time="2018-11-06 14:39:25.428" level=info msg="172.16.200.21:8080 Connection successful" line="task/Info.go:66" package=tsak
+time="2018-11-06 14:39:25.428" level=info msg="start running switch" line="task/Info.go:79" package=tsak
+time="2018-11-06 14:39:25.428" level=info msg="start running getQuery" line="task/Info.go:82" package=tsak
+time="2018-11-06 14:39:25.428" level=info msg="start running DealQuerycmd " line="server/DealHander.go:62" package=server
+time="2018-11-06 14:39:25.428" level=info msg="start matching information: [99.2.2.1]" line="server/DealHander.go:63" package=server
+time="2018-11-06 14:39:25.428" level=info msg="start running GeoliteLookup " line="server/DealHander.go:16" package=server
+time="2018-11-06 14:39:25.428" level=info msg=99.2.2.1 line="server/DealHander.go:17" package=server
+time="2018-11-06 14:39:25.428" level=info msg="GeoliteLookup running over" line="server/DealHander.go:29" package=server
+time="2018-11-06 14:39:25.428" level=info msg="dealQuerycmd  Country US(America)" line="server/DealHander.go:90" package=server
+time="2018-11-06 14:39:25.428" level=info msg="start matching City proper " line="server/DealHander.go:36" package=server
+time="2018-11-06 14:39:25.428" level=info msg="HandleIPServer running over" line="task/Info.go:94" package=tsak
+time="2018-11-06 14:39:41.284" level=info msg="start running HandleGETServer " line="task/Info.go:65" package=tsak
+time="2018-11-06 14:39:41.284" level=info msg="172.16.200.21:8080 Connection successful" line="task/Info.go:66" package=tsak
+time="2018-11-06 14:39:41.284" level=info msg="start running switch" line="task/Info.go:79" package=tsak
+time="2018-11-06 14:39:41.284" level=info msg="start running postQuery" line="task/Info.go:86" package=tsak
+time="2018-11-06 14:39:41.284" level=info msg="start running DealQuerycmd " line="server/DealHander.go:62" package=server
+time="2018-11-06 14:39:41.284" level=info msg="start matching information: [99.2.2.1]" line="server/DealHander.go:63" package=server
+time="2018-11-06 14:39:41.285" level=info msg="start running GeoliteLookup " line="server/DealHander.go:16" package=server
+time="2018-11-06 14:39:41.285" level=info msg=99.2.2.1 line="server/DealHander.go:17" package=server
+time="2018-11-06 14:39:41.285" level=info msg="GeoliteLookup running over" line="server/DealHander.go:29" package=server
+time="2018-11-06 14:39:41.285" level=info msg="dealQuerycmd  Country US(America)" line="server/DealHander.go:90" package=server
+time="2018-11-06 14:39:41.285" level=info msg="start matching City proper " line="server/DealHander.go:36" package=server
+time="2018-11-06 14:39:41.285" level=info msg="HandleIPServer running over" line="task/Info.go:94" package=tsak
+time="2018-11-06 14:42:32.773" level=info msg="退出 interrupt" line="task/Info.go:42" package=tsak
+time="2018-11-06 14:42:39.961" level=info msg="welcome to main" line="public.info/main.go:25" package=main
+time="2018-11-06 14:42:46.901" level=info msg="start running HandleGETServer " line="task/Info.go:65" package=tsak
+time="2018-11-06 14:42:46.902" level=info msg="172.16.200.21:8080 Connection successful" line="task/Info.go:66" package=tsak
+time="2018-11-06 14:42:46.902" level=info msg="start running switch" line="task/Info.go:79" package=tsak
+time="2018-11-06 14:42:46.902" level=info msg="start running postQuery" line="task/Info.go:86" package=tsak
+time="2018-11-06 14:42:46.902" level=info msg="start running DealQuerycmd " line="server/DealHander.go:62" package=server
+time="2018-11-06 14:42:46.902" level=info msg="start matching information: [99.2.2.1]" line="server/DealHander.go:63" package=server
+time="2018-11-06 14:42:46.902" level=info msg="start running GeoliteLookup " line="server/DealHander.go:16" package=server
+time="2018-11-06 14:42:46.902" level=info msg=99.2.2.1 line="server/DealHander.go:17" package=server
+time="2018-11-06 14:42:46.902" level=info msg="GeoliteLookup running over" line="server/DealHander.go:29" package=server
+time="2018-11-06 14:42:46.902" level=info msg="dealQuerycmd  Country US(America)" line="server/DealHander.go:90" package=server
+time="2018-11-06 14:42:46.903" level=info msg="start matching City proper " line="server/DealHander.go:36" package=server
+time="2018-11-06 14:42:46.903" level=info msg="HandleIPServer running over" line="task/Info.go:94" package=tsak
+time="2018-11-06 14:43:11.142" level=info msg="start running HandleGETServer " line="task/Info.go:65" package=tsak
+time="2018-11-06 14:43:11.142" level=info msg="172.16.200.21:8080 Connection successful" line="task/Info.go:66" package=tsak
+time="2018-11-06 14:43:11.143" level=info msg="start running switch" line="task/Info.go:79" package=tsak
+time="2018-11-06 14:43:11.143" level=info msg="start running postQuery" line="task/Info.go:86" package=tsak
+time="2018-11-06 14:43:11.143" level=info msg="start running DealQuerycmd " line="server/DealHander.go:62" package=server
+time="2018-11-06 14:43:11.143" level=info msg="start matching information: []" line="server/DealHander.go:63" package=server
+time="2018-11-06 14:43:11.143" level=info msg="HandleIPServer running over" line="task/Info.go:94" package=tsak
+time="2018-11-06 14:43:30.409" level=info msg="start running HandleGETServer " line="task/Info.go:65" package=tsak
+time="2018-11-06 14:43:30.409" level=info msg="172.16.200.21:8080 Connection successful" line="task/Info.go:66" package=tsak
+time="2018-11-06 14:43:30.409" level=info msg="start running switch" line="task/Info.go:79" package=tsak
+time="2018-11-06 14:43:30.410" level=info msg="start running getQuery" line="task/Info.go:82" package=tsak
+time="2018-11-06 14:43:30.410" level=info msg="start running DealQuerycmd " line="server/DealHander.go:62" package=server
+time="2018-11-06 14:43:30.410" level=info msg="start matching information: [99.2.2.1]" line="server/DealHander.go:63" package=server
+time="2018-11-06 14:43:30.410" level=info msg="start running GeoliteLookup " line="server/DealHander.go:16" package=server
+time="2018-11-06 14:43:30.410" level=info msg=99.2.2.1 line="server/DealHander.go:17" package=server
+time="2018-11-06 14:43:30.410" level=info msg="GeoliteLookup running over" line="server/DealHander.go:29" package=server
+time="2018-11-06 14:43:30.410" level=info msg="dealQuerycmd  Country US(America)" line="server/DealHander.go:90" package=server
+time="2018-11-06 14:43:30.410" level=info msg="start matching City proper " line="server/DealHander.go:36" package=server
+time="2018-11-06 14:43:30.410" level=info msg="HandleIPServer running over" line="task/Info.go:94" package=tsak
+time="2018-11-06 14:43:48.346" level=info msg="start running HandleGETServer " line="task/Info.go:65" package=tsak
+time="2018-11-06 14:43:48.346" level=info msg="172.16.200.21:8080 Connection successful" line="task/Info.go:66" package=tsak
+time="2018-11-06 14:43:48.346" level=info msg="start running switch" line="task/Info.go:79" package=tsak
+time="2018-11-06 14:43:48.346" level=info msg="start running getQuery" line="task/Info.go:82" package=tsak
+time="2018-11-06 14:43:48.346" level=info msg="start running DealQuerycmd " line="server/DealHander.go:62" package=server
+time="2018-11-06 14:43:48.346" level=info msg="start matching information: [99.2.2.1]" line="server/DealHander.go:63" package=server
+time="2018-11-06 14:43:48.346" level=info msg="start running GeoliteLookup " line="server/DealHander.go:16" package=server
+time="2018-11-06 14:43:48.346" level=info msg=99.2.2.1 line="server/DealHander.go:17" package=server
+time="2018-11-06 14:43:48.346" level=info msg="GeoliteLookup running over" line="server/DealHander.go:29" package=server
+time="2018-11-06 14:43:48.346" level=info msg="dealQuerycmd  Country US(America)" line="server/DealHander.go:90" package=server
+time="2018-11-06 14:43:48.346" level=info msg="start matching City proper " line="server/DealHander.go:36" package=server
+time="2018-11-06 14:43:48.347" level=info msg="HandleIPServer running over" line="task/Info.go:94" package=tsak
+time="2018-11-06 14:43:55.381" level=info msg="start running HandleGETServer " line="task/Info.go:65" package=tsak
+time="2018-11-06 14:43:55.382" level=info msg="172.16.200.21:8080 Connection successful" line="task/Info.go:66" package=tsak
+time="2018-11-06 14:43:55.382" level=info msg="start running switch" line="task/Info.go:79" package=tsak
+time="2018-11-06 14:43:55.382" level=info msg="start running postQuery" line="task/Info.go:86" package=tsak
+time="2018-11-06 14:43:55.382" level=info msg="start running DealQuerycmd " line="server/DealHander.go:62" package=server
+time="2018-11-06 14:43:55.382" level=info msg="start matching information: [99.2.2.1]" line="server/DealHander.go:63" package=server
+time="2018-11-06 14:43:55.382" level=info msg="start running GeoliteLookup " line="server/DealHander.go:16" package=server
+time="2018-11-06 14:43:55.382" level=info msg=99.2.2.1 line="server/DealHander.go:17" package=server
+time="2018-11-06 14:43:55.382" level=info msg="GeoliteLookup running over" line="server/DealHander.go:29" package=server
+time="2018-11-06 14:43:55.382" level=info msg="dealQuerycmd  Country US(America)" line="server/DealHander.go:90" package=server
+time="2018-11-06 14:43:55.382" level=info msg="start matching City proper " line="server/DealHander.go:36" package=server
+time="2018-11-06 14:43:55.382" level=info msg="HandleIPServer running over" line="task/Info.go:94" package=tsak
+time="2018-11-06 14:44:31.792" level=info msg="start running HandleGETServer " line="task/Info.go:65" package=tsak
+time="2018-11-06 14:44:31.792" level=info msg="172.16.200.21:8080 Connection successful" line="task/Info.go:66" package=tsak
+time="2018-11-06 14:44:31.792" level=info msg="start running switch" line="task/Info.go:79" package=tsak
+time="2018-11-06 14:44:31.792" level=info msg="start running getQuery" line="task/Info.go:82" package=tsak
+time="2018-11-06 14:44:31.792" level=info msg="start running DealQuerycmd " line="server/DealHander.go:62" package=server
+time="2018-11-06 14:44:31.792" level=info msg="start matching information: [99.2.2.1]" line="server/DealHander.go:63" package=server
+time="2018-11-06 14:44:31.793" level=info msg="start running GeoliteLookup " line="server/DealHander.go:16" package=server
+time="2018-11-06 14:44:31.793" level=info msg=99.2.2.1 line="server/DealHander.go:17" package=server
+time="2018-11-06 14:44:31.793" level=info msg="GeoliteLookup running over" line="server/DealHander.go:29" package=server
+time="2018-11-06 14:44:31.793" level=info msg="dealQuerycmd  Country US(America)" line="server/DealHander.go:90" package=server
+time="2018-11-06 14:44:31.793" level=info msg="start matching City proper " line="server/DealHander.go:36" package=server
+time="2018-11-06 14:44:31.793" level=info msg="HandleIPServer running over" line="task/Info.go:94" package=tsak
+time="2018-11-06 14:44:35.614" level=info msg="start running HandleGETServer " line="task/Info.go:65" package=tsak
+time="2018-11-06 14:44:35.614" level=info msg="172.16.200.21:8080 Connection successful" line="task/Info.go:66" package=tsak
+time="2018-11-06 14:44:35.614" level=info msg="start running switch" line="task/Info.go:79" package=tsak
+time="2018-11-06 14:44:35.614" level=info msg="start running postQuery" line="task/Info.go:86" package=tsak
+time="2018-11-06 14:44:35.614" level=info msg="start running DealQuerycmd " line="server/DealHander.go:62" package=server
+time="2018-11-06 14:44:35.614" level=info msg="start matching information: [99.2.2.1]" line="server/DealHander.go:63" package=server
+time="2018-11-06 14:44:35.614" level=info msg="start running GeoliteLookup " line="server/DealHander.go:16" package=server
+time="2018-11-06 14:44:35.614" level=info msg=99.2.2.1 line="server/DealHander.go:17" package=server
+time="2018-11-06 14:44:35.614" level=info msg="GeoliteLookup running over" line="server/DealHander.go:29" package=server
+time="2018-11-06 14:44:35.614" level=info msg="dealQuerycmd  Country US(America)" line="server/DealHander.go:90" package=server
+time="2018-11-06 14:44:35.614" level=info msg="start matching City proper " line="server/DealHander.go:36" package=server
+time="2018-11-06 14:44:35.614" level=info msg="HandleIPServer running over" line="task/Info.go:94" package=tsak
+time="2018-11-06 14:45:10.708" level=info msg="start running HandleGETServer " line="task/Info.go:65" package=tsak
+time="2018-11-06 14:45:10.708" level=info msg="172.16.200.21:8080 Connection successful" line="task/Info.go:66" package=tsak
+time="2018-11-06 14:45:10.709" level=info msg="start running switch" line="task/Info.go:79" package=tsak
+time="2018-11-06 14:45:10.709" level=info msg="start running postQuery" line="task/Info.go:86" package=tsak
+time="2018-11-06 14:45:10.709" level=info msg="start running DealQuerycmd " line="server/DealHander.go:62" package=server
+time="2018-11-06 14:45:10.709" level=info msg="start matching information: [99.2.2.1]" line="server/DealHander.go:63" package=server
+time="2018-11-06 14:45:10.709" level=info msg="start running GeoliteLookup " line="server/DealHander.go:16" package=server
+time="2018-11-06 14:45:10.709" level=info msg=99.2.2.1 line="server/DealHander.go:17" package=server
+time="2018-11-06 14:45:10.709" level=info msg="GeoliteLookup running over" line="server/DealHander.go:29" package=server
+time="2018-11-06 14:45:10.709" level=info msg="dealQuerycmd  Country US(America)" line="server/DealHander.go:90" package=server
+time="2018-11-06 14:45:10.709" level=info msg="start matching City proper " line="server/DealHander.go:36" package=server
+time="2018-11-06 14:45:10.709" level=info msg="HandleIPServer running over" line="task/Info.go:94" package=tsak
+time="2018-11-06 14:45:19.758" level=info msg="start running HandleGETServer " line="task/Info.go:65" package=tsak
+time="2018-11-06 14:45:19.758" level=info msg="172.16.200.21:8080 Connection successful" line="task/Info.go:66" package=tsak
+time="2018-11-06 14:45:19.758" level=info msg="start running switch" line="task/Info.go:79" package=tsak
+time="2018-11-06 14:45:19.758" level=info msg="start running getQuery" line="task/Info.go:82" package=tsak
+time="2018-11-06 14:45:19.759" level=info msg="start running DealQuerycmd " line="server/DealHander.go:62" package=server
+time="2018-11-06 14:45:19.759" level=info msg="start matching information: [99.2.2.1]" line="server/DealHander.go:63" package=server
+time="2018-11-06 14:45:19.759" level=info msg="start running GeoliteLookup " line="server/DealHander.go:16" package=server
+time="2018-11-06 14:45:19.759" level=info msg=99.2.2.1 line="server/DealHander.go:17" package=server
+time="2018-11-06 14:45:19.759" level=info msg="GeoliteLookup running over" line="server/DealHander.go:29" package=server
+time="2018-11-06 14:45:19.759" level=info msg="dealQuerycmd  Country US(America)" line="server/DealHander.go:90" package=server
+time="2018-11-06 14:45:19.759" level=info msg="start matching City proper " line="server/DealHander.go:36" package=server
+time="2018-11-06 14:45:19.760" level=info msg="HandleIPServer running over" line="task/Info.go:94" package=tsak
+time="2018-11-06 14:45:26.711" level=info msg="start running HandleGETServer " line="task/Info.go:65" package=tsak
+time="2018-11-06 14:45:26.711" level=info msg="172.16.200.21:8080 Connection successful" line="task/Info.go:66" package=tsak
+time="2018-11-06 14:45:26.711" level=info msg="start running switch" line="task/Info.go:79" package=tsak
+time="2018-11-06 14:45:26.711" level=info msg="start running postQuery" line="task/Info.go:86" package=tsak
+time="2018-11-06 14:45:26.711" level=info msg="start running DealQuerycmd " line="server/DealHander.go:62" package=server
+time="2018-11-06 14:45:26.711" level=info msg="start matching information: [99.2.2.1]" line="server/DealHander.go:63" package=server
+time="2018-11-06 14:45:26.711" level=info msg="start running GeoliteLookup " line="server/DealHander.go:16" package=server
+time="2018-11-06 14:45:26.711" level=info msg=99.2.2.1 line="server/DealHander.go:17" package=server
+time="2018-11-06 14:45:26.711" level=info msg="GeoliteLookup running over" line="server/DealHander.go:29" package=server
+time="2018-11-06 14:45:26.711" level=info msg="dealQuerycmd  Country US(America)" line="server/DealHander.go:90" package=server
+time="2018-11-06 14:45:26.711" level=info msg="start matching City proper " line="server/DealHander.go:36" package=server
+time="2018-11-06 14:45:26.711" level=info msg="HandleIPServer running over" line="task/Info.go:94" package=tsak
+time="2018-11-06 14:46:20.208" level=info msg="start running HandleGETServer " line="task/Info.go:65" package=tsak
+time="2018-11-06 14:46:20.208" level=info msg="172.16.200.21:8080 Connection successful" line="task/Info.go:66" package=tsak
+time="2018-11-06 14:46:20.208" level=info msg="start running switch" line="task/Info.go:79" package=tsak
+time="2018-11-06 14:46:20.208" level=info msg="start running postQuery" line="task/Info.go:86" package=tsak
+time="2018-11-06 14:46:20.208" level=info msg="start running DealQuerycmd " line="server/DealHander.go:62" package=server
+time="2018-11-06 14:46:20.208" level=info msg="start matching information: [99.2.2.1]" line="server/DealHander.go:63" package=server
+time="2018-11-06 14:46:20.208" level=info msg="start running GeoliteLookup " line="server/DealHander.go:16" package=server
+time="2018-11-06 14:46:20.208" level=info msg=99.2.2.1 line="server/DealHander.go:17" package=server
+time="2018-11-06 14:46:20.208" level=info msg="GeoliteLookup running over" line="server/DealHander.go:29" package=server
+time="2018-11-06 14:46:20.208" level=info msg="dealQuerycmd  Country US(America)" line="server/DealHander.go:90" package=server
+time="2018-11-06 14:46:20.208" level=info msg="start matching City proper " line="server/DealHander.go:36" package=server
+time="2018-11-06 14:46:20.208" level=info msg="HandleIPServer running over" line="task/Info.go:94" package=tsak
+time="2018-11-06 14:52:34.979" level=info msg="退出 interrupt" line="task/Info.go:42" package=tsak
+time="2018-11-06 14:52:38.903" level=info msg="welcome to main" line="public.info/main.go:25" package=main
+time="2018-11-06 14:52:43.064" level=info msg="start running HandleGETServer " line="task/Info.go:64" package=tsak
+time="2018-11-06 14:52:43.064" level=info msg="172.16.200.21:8080 Connection successful" line="task/Info.go:65" package=tsak
+time="2018-11-06 14:52:43.064" level=info msg="start running switch" line="task/Info.go:79" package=tsak
+time="2018-11-06 14:52:43.065" level=info msg="start running postQuery" line="task/Info.go:86" package=tsak
+time="2018-11-06 14:52:43.065" level=info msg="start running DealQuerycmd " line="server/DealHander.go:62" package=server
+time="2018-11-06 14:52:43.065" level=info msg="start matching information: [99.2.2.1]" line="server/DealHander.go:63" package=server
+time="2018-11-06 14:52:43.065" level=info msg="start running GeoliteLookup " line="server/DealHander.go:16" package=server
+time="2018-11-06 14:52:43.065" level=info msg=99.2.2.1 line="server/DealHander.go:17" package=server
+time="2018-11-06 14:52:43.065" level=info msg="GeoliteLookup running over" line="server/DealHander.go:29" package=server
+time="2018-11-06 14:52:43.065" level=info msg="dealQuerycmd  Country US(America)" line="server/DealHander.go:90" package=server
+time="2018-11-06 14:52:43.065" level=info msg="start matching City proper " line="server/DealHander.go:36" package=server
+time="2018-11-06 14:52:43.065" level=info msg="HandleIPServer running over" line="task/Info.go:94" package=tsak
+time="2018-11-06 14:52:48.480" level=info msg="start running HandleGETServer " line="task/Info.go:64" package=tsak
+time="2018-11-06 14:52:48.480" level=info msg="172.16.200.21:8080 Connection successful" line="task/Info.go:65" package=tsak
+time="2018-11-06 14:52:48.480" level=info msg="start running switch" line="task/Info.go:79" package=tsak
+time="2018-11-06 14:52:48.480" level=info msg="start running getQuery" line="task/Info.go:82" package=tsak
+time="2018-11-06 14:52:48.480" level=info msg="start running DealQuerycmd " line="server/DealHander.go:62" package=server
+time="2018-11-06 14:52:48.480" level=info msg="start matching information: [99.2.2.1]" line="server/DealHander.go:63" package=server
+time="2018-11-06 14:52:48.480" level=info msg="start running GeoliteLookup " line="server/DealHander.go:16" package=server
+time="2018-11-06 14:52:48.480" level=info msg=99.2.2.1 line="server/DealHander.go:17" package=server
+time="2018-11-06 14:52:48.480" level=info msg="GeoliteLookup running over" line="server/DealHander.go:29" package=server
+time="2018-11-06 14:52:48.480" level=info msg="dealQuerycmd  Country US(America)" line="server/DealHander.go:90" package=server
+time="2018-11-06 14:52:48.481" level=info msg="start matching City proper " line="server/DealHander.go:36" package=server
+time="2018-11-06 14:52:48.481" level=info msg="HandleIPServer running over" line="task/Info.go:94" package=tsak

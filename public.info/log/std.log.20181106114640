@@ -1,0 +1,26 @@
+time="2018-11-06 11:48:42.285" level=info msg="退出 interrupt" line="task/Info.go:42" package=tsak
+time="2018-11-06 11:48:45.418" level=info msg="welcome to main" line="public.info/main.go:25" package=main
+time="2018-11-06 11:48:51.954" level=info msg="start running HandleGETServer " line="task/Info.go:65" package=tsak
+time="2018-11-06 11:48:51.954" level=info msg="172.16.200.21:8080 Connection successful" line="task/Info.go:66" package=tsak
+time="2018-11-06 11:48:51.954" level=info msg="HandleIPServer running over" line="task/Info.go:91" package=tsak
+time="2018-11-06 11:49:32.769" level=info msg="退出 interrupt" line="task/Info.go:42" package=tsak
+time="2018-11-06 11:49:57.400" level=info msg="welcome to main" line="public.info/main.go:25" package=main
+time="2018-11-06 11:50:05.139" level=info msg="start running HandleGETServer " line="task/Info.go:65" package=tsak
+time="2018-11-06 11:50:05.139" level=info msg="172.16.200.21:8080 Connection successful" line="task/Info.go:66" package=tsak
+time="2018-11-06 11:50:05.139" level=info msg="HandleIPServer running over" line="task/Info.go:91" package=tsak
+time="2018-11-06 11:54:11.954" level=info msg="start running HandleGETServer " line="task/Info.go:65" package=tsak
+time="2018-11-06 11:54:11.954" level=info msg="172.16.200.21:8080 Connection successful" line="task/Info.go:66" package=tsak
+time="2018-11-06 11:54:11.954" level=info msg="HandleIPServer running over" line="task/Info.go:91" package=tsak
+time="2018-11-06 11:54:31.879" level=info msg="start running HandleGETServer " line="task/Info.go:65" package=tsak
+time="2018-11-06 11:54:31.879" level=info msg="172.16.200.21:8080 Connection successful" line="task/Info.go:66" package=tsak
+time="2018-11-06 11:54:31.879" level=info msg="HandleIPServer running over" line="task/Info.go:91" package=tsak
+time="2018-11-06 11:55:46.031" level=info msg="退出 interrupt" line="task/Info.go:42" package=tsak
+time="2018-11-06 11:55:49.277" level=info msg="welcome to main" line="public.info/main.go:25" package=main
+time="2018-11-06 11:55:53.699" level=info msg="start running HandleGETServer " line="task/Info.go:65" package=tsak
+time="2018-11-06 11:55:53.699" level=info msg="172.16.200.21:8080 Connection successful" line="task/Info.go:66" package=tsak
+time="2018-11-06 11:55:53.699" level=info msg="HandleIPServer running over" line="task/Info.go:92" package=tsak
+time="2018-11-06 11:56:45.058" level=info msg="退出 interrupt" line="task/Info.go:42" package=tsak
+time="2018-11-06 11:56:49.390" level=info msg="welcome to main" line="public.info/main.go:25" package=main
+time="2018-11-06 11:56:54.208" level=info msg="start running HandleGETServer " line="task/Info.go:65" package=tsak
+time="2018-11-06 11:56:54.209" level=info msg="172.16.200.21:8080 Connection successful" line="task/Info.go:66" package=tsak
+time="2018-11-06 11:56:54.209" level=info msg="HandleIPServer running over" line="task/Info.go:92" package=tsak

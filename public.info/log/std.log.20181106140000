@@ -1,0 +1,125 @@
+time="2018-11-06 14:17:08.302" level=info msg="退出 interrupt" line="task/Info.go:42" package=tsak
+time="2018-11-06 14:17:12.638" level=info msg="welcome to main" line="public.info/main.go:25" package=main
+time="2018-11-06 14:17:20.451" level=info msg="start running HandleGETServer " line="task/Info.go:65" package=tsak
+time="2018-11-06 14:17:20.451" level=info msg="172.16.200.21:8080 Connection successful" line="task/Info.go:66" package=tsak
+time="2018-11-06 14:17:20.451" level=info msg="start running DealQuerycmd " line="server/DealHander.go:62" package=server
+time="2018-11-06 14:17:20.451" level=info msg=123.2.1.1 line="server/DealHander.go:63" package=server
+time="2018-11-06 14:17:20.451" level=info msg="start running GeoliteLookup " line="server/DealHander.go:16" package=server
+time="2018-11-06 14:17:20.451" level=info msg=123.2.1.1 line="server/DealHander.go:17" package=server
+time="2018-11-06 14:17:20.453" level=info msg="GeoliteLookup running over" line="server/DealHander.go:29" package=server
+time="2018-11-06 14:17:20.453" level=info msg="dealQuerycmd  Country default " line="server/DealHander.go:178" package=server
+time="2018-11-06 14:17:20.453" level=info msg="&{{2146782 map[en:Thornlands]} {OC 6255151 map[ja:オセアニア pt-BR:Oceania ru:Океания zh-CN:大洋洲 de:Ozeanien en:Oceania es:Oceanía fr:Océanie]} {2077456 false AU map[fr:Australie ja:オーストラリア pt-BR:Austrália ru:Австралия zh-CN:澳大利亚 de:Australien en:Australia es:Australia]} {1000 -27.5575 153.2648 0 Australia/Brisbane} {4164} {2077456 false AU map[en:Australia es:Australia fr:Australie ja:オーストラリア pt-BR:Austrália ru:Австралия zh-CN:澳大利亚 de:Australien]} {0 false  map[] } [{2152274 QLD map[en:Queensland pt-BR:Queensland ru:Квинсленд]}] {false false}}" line="server/DealHander.go:180" package=server
+time="2018-11-06 14:17:20.453" level=info msg="Query IP information does not exist!:123.2.1.1\n" line="server/DealHander.go:181" package=server
+time="2018-11-06 14:17:20.453" level=info msg="HandleIPServer running over" line="task/Info.go:99" package=tsak
+time="2018-11-06 14:18:23.939" level=info msg="start running HandleGETServer " line="task/Info.go:65" package=tsak
+time="2018-11-06 14:18:23.939" level=info msg="172.16.200.21:8080 Connection successful" line="task/Info.go:66" package=tsak
+time="2018-11-06 14:18:23.939" level=info msg="start running DealQuerycmd " line="server/DealHander.go:62" package=server
+time="2018-11-06 14:18:23.939" level=info msg=123.2.1.1 line="server/DealHander.go:63" package=server
+time="2018-11-06 14:18:23.939" level=info msg="start running GeoliteLookup " line="server/DealHander.go:16" package=server
+time="2018-11-06 14:18:23.939" level=info msg=123.2.1.1 line="server/DealHander.go:17" package=server
+time="2018-11-06 14:18:23.940" level=info msg="GeoliteLookup running over" line="server/DealHander.go:29" package=server
+time="2018-11-06 14:18:23.940" level=info msg="dealQuerycmd  Country default " line="server/DealHander.go:178" package=server
+time="2018-11-06 14:18:23.940" level=info msg="&{{2146782 map[en:Thornlands]} {OC 6255151 map[fr:Océanie ja:オセアニア pt-BR:Oceania ru:Океания zh-CN:大洋洲 de:Ozeanien en:Oceania es:Oceanía]} {2077456 false AU map[es:Australia fr:Australie ja:オーストラリア pt-BR:Austrália ru:Австралия zh-CN:澳大利亚 de:Australien en:Australia]} {1000 -27.5575 153.2648 0 Australia/Brisbane} {4164} {2077456 false AU map[de:Australien en:Australia es:Australia fr:Australie ja:オーストラリア pt-BR:Austrália ru:Австралия zh-CN:澳大利亚]} {0 false  map[] } [{2152274 QLD map[en:Queensland pt-BR:Queensland ru:Квинсленд]}] {false false}}" line="server/DealHander.go:180" package=server
+time="2018-11-06 14:18:23.940" level=info msg="Query IP information does not exist!:123.2.1.1\n" line="server/DealHander.go:181" package=server
+time="2018-11-06 14:18:23.940" level=info msg="HandleIPServer running over" line="task/Info.go:99" package=tsak
+time="2018-11-06 14:18:49.337" level=info msg="退出 interrupt" line="task/Info.go:42" package=tsak
+time="2018-11-06 14:19:57.600" level=info msg="welcome to main" line="public.info/main.go:25" package=main
+time="2018-11-06 14:20:04.938" level=info msg="start running HandleGETServer " line="task/Info.go:65" package=tsak
+time="2018-11-06 14:20:04.938" level=info msg="172.16.200.21:8080 Connection successful" line="task/Info.go:66" package=tsak
+time="2018-11-06 14:20:04.939" level=info msg="start running DealQuerycmd " line="server/DealHander.go:62" package=server
+time="2018-11-06 14:20:04.939" level=info msg=123.2.1.1 line="server/DealHander.go:63" package=server
+time="2018-11-06 14:20:04.939" level=info msg="start running GeoliteLookup " line="server/DealHander.go:16" package=server
+time="2018-11-06 14:20:04.939" level=info msg=123.2.1.1 line="server/DealHander.go:17" package=server
+time="2018-11-06 14:20:04.939" level=info msg="GeoliteLookup running over" line="server/DealHander.go:29" package=server
+time="2018-11-06 14:20:04.939" level=info msg="dealQuerycmd  Country default " line="server/DealHander.go:178" package=server
+time="2018-11-06 14:20:04.939" level=info msg="&{{2146782 map[en:Thornlands]} {OC 6255151 map[ru:Океания zh-CN:大洋洲 de:Ozeanien en:Oceania es:Oceanía fr:Océanie ja:オセアニア pt-BR:Oceania]} {2077456 false AU map[zh-CN:澳大利亚 de:Australien en:Australia es:Australia fr:Australie ja:オーストラリア pt-BR:Austrália ru:Австралия]} {1000 -27.5575 153.2648 0 Australia/Brisbane} {4164} {2077456 false AU map[zh-CN:澳大利亚 de:Australien en:Australia es:Australia fr:Australie ja:オーストラリア pt-BR:Austrália ru:Австралия]} {0 false  map[] } [{2152274 QLD map[en:Queensland pt-BR:Queensland ru:Квинсленд]}] {false false}}" line="server/DealHander.go:180" package=server
+time="2018-11-06 14:20:04.939" level=info msg="Query IP information does not exist!:123.2.1.1\n" line="server/DealHander.go:181" package=server
+time="2018-11-06 14:20:04.939" level=info msg="HandleIPServer running over" line="task/Info.go:100" package=tsak
+time="2018-11-06 14:22:48.497" level=info msg="退出 interrupt" line="task/Info.go:42" package=tsak
+time="2018-11-06 14:22:52.309" level=info msg="welcome to main" line="public.info/main.go:25" package=main
+time="2018-11-06 14:23:00.495" level=info msg="start running HandleGETServer " line="task/Info.go:65" package=tsak
+time="2018-11-06 14:23:00.495" level=info msg="172.16.200.21:8080 Connection successful" line="task/Info.go:66" package=tsak
+time="2018-11-06 14:23:00.496" level=info msg="start running switch" line="task/Info.go:79" package=tsak
+time="2018-11-06 14:23:00.496" level=info msg="start running DealQuerycmd " line="server/DealHander.go:62" package=server
+time="2018-11-06 14:23:00.496" level=info msg=123.2.1.1 line="server/DealHander.go:63" package=server
+time="2018-11-06 14:23:00.496" level=info msg="start running GeoliteLookup " line="server/DealHander.go:16" package=server
+time="2018-11-06 14:23:00.496" level=info msg=123.2.1.1 line="server/DealHander.go:17" package=server
+time="2018-11-06 14:23:00.496" level=info msg="GeoliteLookup running over" line="server/DealHander.go:29" package=server
+time="2018-11-06 14:23:00.496" level=info msg="dealQuerycmd  Country default " line="server/DealHander.go:178" package=server
+time="2018-11-06 14:23:00.496" level=info msg="&{{2146782 map[en:Thornlands]} {OC 6255151 map[es:Oceanía fr:Océanie ja:オセアニア pt-BR:Oceania ru:Океания zh-CN:大洋洲 de:Ozeanien en:Oceania]} {2077456 false AU map[zh-CN:澳大利亚 de:Australien en:Australia es:Australia fr:Australie ja:オーストラリア pt-BR:Austrália ru:Австралия]} {1000 -27.5575 153.2648 0 Australia/Brisbane} {4164} {2077456 false AU map[es:Australia fr:Australie ja:オーストラリア pt-BR:Austrália ru:Австралия zh-CN:澳大利亚 de:Australien en:Australia]} {0 false  map[] } [{2152274 QLD map[en:Queensland pt-BR:Queensland ru:Квинсленд]}] {false false}}" line="server/DealHander.go:180" package=server
+time="2018-11-06 14:23:00.496" level=info msg="Query IP information does not exist!:123.2.1.1\n" line="server/DealHander.go:181" package=server
+time="2018-11-06 14:23:00.496" level=info msg="HandleIPServer running over" line="task/Info.go:104" package=tsak
+time="2018-11-06 14:29:53.570" level=info msg="退出 interrupt" line="task/Info.go:42" package=tsak
+time="2018-11-06 14:29:56.606" level=info msg="welcome to main" line="public.info/main.go:25" package=main
+time="2018-11-06 14:30:01.857" level=info msg="start running HandleGETServer " line="task/Info.go:65" package=tsak
+time="2018-11-06 14:30:01.858" level=info msg="172.16.200.21:8080 Connection successful" line="task/Info.go:66" package=tsak
+time="2018-11-06 14:30:01.858" level=info msg="start running switch" line="task/Info.go:79" package=tsak
+time="2018-11-06 14:30:01.858" level=info msg="start running getQuery" line="task/Info.go:82" package=tsak
+time="2018-11-06 14:30:01.858" level=info msg="start running DealQuerycmd " line="server/DealHander.go:62" package=server
+time="2018-11-06 14:30:01.858" level=info msg="start matching information: [123.2.1.1]" line="server/DealHander.go:63" package=server
+time="2018-11-06 14:30:01.858" level=info msg="start running GeoliteLookup " line="server/DealHander.go:16" package=server
+time="2018-11-06 14:30:01.858" level=info msg=123.2.1.1 line="server/DealHander.go:17" package=server
+time="2018-11-06 14:30:01.858" level=info msg="GeoliteLookup running over" line="server/DealHander.go:29" package=server
+time="2018-11-06 14:30:01.858" level=info msg="dealQuerycmd  Country default " line="server/DealHander.go:174" package=server
+time="2018-11-06 14:30:01.858" level=info msg="&{{2146782 map[en:Thornlands]} {OC 6255151 map[ja:オセアニア pt-BR:Oceania ru:Океания zh-CN:大洋洲 de:Ozeanien en:Oceania es:Oceanía fr:Océanie]} {2077456 false AU map[fr:Australie ja:オーストラリア pt-BR:Austrália ru:Австралия zh-CN:澳大利亚 de:Australien en:Australia es:Australia]} {1000 -27.5575 153.2648 0 Australia/Brisbane} {4164} {2077456 false AU map[ru:Австралия zh-CN:澳大利亚 de:Australien en:Australia es:Australia fr:Australie ja:オーストラリア pt-BR:Austrália]} {0 false  map[] } [{2152274 QLD map[ru:Квинсленд en:Queensland pt-BR:Queensland]}] {false false}}" line="server/DealHander.go:176" package=server
+time="2018-11-06 14:30:01.858" level=info msg="Query IP information does not exist!:123.2.1.1\n" line="server/DealHander.go:177" package=server
+time="2018-11-06 14:30:01.858" level=info msg="HandleIPServer running over" line="task/Info.go:94" package=tsak
+time="2018-11-06 14:30:20.479" level=info msg="start running HandleGETServer " line="task/Info.go:65" package=tsak
+time="2018-11-06 14:30:20.479" level=info msg="172.16.200.21:8080 Connection successful" line="task/Info.go:66" package=tsak
+time="2018-11-06 14:30:20.480" level=info msg="start running switch" line="task/Info.go:79" package=tsak
+time="2018-11-06 14:30:20.480" level=info msg="start running postQuery" line="task/Info.go:86" package=tsak
+time="2018-11-06 14:30:20.480" level=info msg="start running DealQuerycmd " line="server/DealHander.go:62" package=server
+time="2018-11-06 14:30:20.480" level=info msg="start matching information: [127.0.0.1]" line="server/DealHander.go:63" package=server
+time="2018-11-06 14:30:20.480" level=info msg="start running GeoliteLookup " line="server/DealHander.go:16" package=server
+time="2018-11-06 14:30:20.480" level=info msg=127.0.0.1 line="server/DealHander.go:17" package=server
+time="2018-11-06 14:30:20.480" level=info msg="Query IP information does not exist!:127.0.0.1" line="server/DealHander.go:26" package=server
+time="2018-11-06 14:30:20.480" level=info msg="Query IP information does not exist!:127.0.0.1" line="server/DealHander.go:72" package=server
+time="2018-11-06 14:30:20.480" level=info msg="HandleIPServer running over" line="task/Info.go:94" package=tsak
+time="2018-11-06 14:30:45.591" level=info msg="start running HandleGETServer " line="task/Info.go:65" package=tsak
+time="2018-11-06 14:30:45.591" level=info msg="172.16.200.21:8080 Connection successful" line="task/Info.go:66" package=tsak
+time="2018-11-06 14:30:45.592" level=info msg="start running switch" line="task/Info.go:79" package=tsak
+time="2018-11-06 14:30:45.592" level=info msg="start running getQuery" line="task/Info.go:82" package=tsak
+time="2018-11-06 14:30:45.592" level=info msg="start running DealQuerycmd " line="server/DealHander.go:62" package=server
+time="2018-11-06 14:30:45.592" level=info msg="start matching information: [99.2.2.1]" line="server/DealHander.go:63" package=server
+time="2018-11-06 14:30:45.592" level=info msg="start running GeoliteLookup " line="server/DealHander.go:16" package=server
+time="2018-11-06 14:30:45.592" level=info msg=99.2.2.1 line="server/DealHander.go:17" package=server
+time="2018-11-06 14:30:45.592" level=info msg="GeoliteLookup running over" line="server/DealHander.go:29" package=server
+time="2018-11-06 14:30:45.592" level=info msg="dealQuerycmd  Country US(America)" line="server/DealHander.go:90" package=server
+time="2018-11-06 14:30:45.592" level=info msg="start matching City proper " line="server/DealHander.go:36" package=server
+time="2018-11-06 14:30:45.592" level=info msg="HandleIPServer running over" line="task/Info.go:94" package=tsak
+time="2018-11-06 14:30:56.097" level=info msg="start running HandleGETServer " line="task/Info.go:65" package=tsak
+time="2018-11-06 14:30:56.097" level=info msg="172.16.200.21:8080 Connection successful" line="task/Info.go:66" package=tsak
+time="2018-11-06 14:30:56.097" level=info msg="start running switch" line="task/Info.go:79" package=tsak
+time="2018-11-06 14:30:56.097" level=info msg="start running getQuery" line="task/Info.go:82" package=tsak
+time="2018-11-06 14:30:56.097" level=info msg="start running DealQuerycmd " line="server/DealHander.go:62" package=server
+time="2018-11-06 14:30:56.097" level=info msg="start matching information: [98.9.2.1]" line="server/DealHander.go:63" package=server
+time="2018-11-06 14:30:56.097" level=info msg="start running GeoliteLookup " line="server/DealHander.go:16" package=server
+time="2018-11-06 14:30:56.097" level=info msg=98.9.2.1 line="server/DealHander.go:17" package=server
+time="2018-11-06 14:30:56.097" level=info msg="Query IP information does not exist!:98.9.2.1" line="server/DealHander.go:26" package=server
+time="2018-11-06 14:30:56.097" level=info msg="Query IP information does not exist!:98.9.2.1" line="server/DealHander.go:72" package=server
+time="2018-11-06 14:30:56.097" level=info msg="HandleIPServer running over" line="task/Info.go:94" package=tsak
+time="2018-11-06 14:31:01.538" level=info msg="start running HandleGETServer " line="task/Info.go:65" package=tsak
+time="2018-11-06 14:31:01.538" level=info msg="172.16.200.21:8080 Connection successful" line="task/Info.go:66" package=tsak
+time="2018-11-06 14:31:01.538" level=info msg="start running switch" line="task/Info.go:79" package=tsak
+time="2018-11-06 14:31:01.538" level=info msg="start running getQuery" line="task/Info.go:82" package=tsak
+time="2018-11-06 14:31:01.538" level=info msg="start running DealQuerycmd " line="server/DealHander.go:62" package=server
+time="2018-11-06 14:31:01.538" level=info msg="start matching information: [99.9.2.1]" line="server/DealHander.go:63" package=server
+time="2018-11-06 14:31:01.538" level=info msg="start running GeoliteLookup " line="server/DealHander.go:16" package=server
+time="2018-11-06 14:31:01.538" level=info msg=99.9.2.1 line="server/DealHander.go:17" package=server
+time="2018-11-06 14:31:01.541" level=info msg="GeoliteLookup running over" line="server/DealHander.go:29" package=server
+time="2018-11-06 14:31:01.541" level=info msg="dealQuerycmd  Country US(America)" line="server/DealHander.go:90" package=server
+time="2018-11-06 14:31:01.541" level=info msg="start matching City proper " line="server/DealHander.go:36" package=server
+time="2018-11-06 14:31:01.541" level=info msg="HandleIPServer running over" line="task/Info.go:94" package=tsak
+time="2018-11-06 14:31:20.011" level=info msg="start running HandleGETServer " line="task/Info.go:65" package=tsak
+time="2018-11-06 14:31:20.011" level=info msg="172.16.200.21:8080 Connection successful" line="task/Info.go:66" package=tsak
+time="2018-11-06 14:31:20.011" level=info msg="start running switch" line="task/Info.go:79" package=tsak
+time="2018-11-06 14:31:20.011" level=info msg="start running getQuery" line="task/Info.go:82" package=tsak
+time="2018-11-06 14:31:20.011" level=info msg="start running DealQuerycmd " line="server/DealHander.go:62" package=server
+time="2018-11-06 14:31:20.011" level=info msg="start matching information: [123.2.2.1]" line="server/DealHander.go:63" package=server
+time="2018-11-06 14:31:20.011" level=info msg="start running GeoliteLookup " line="server/DealHander.go:16" package=server
+time="2018-11-06 14:31:20.012" level=info msg=123.2.2.1 line="server/DealHander.go:17" package=server
+time="2018-11-06 14:31:20.012" level=info msg="GeoliteLookup running over" line="server/DealHander.go:29" package=server
+time="2018-11-06 14:31:20.012" level=info msg="dealQuerycmd  Country default " line="server/DealHander.go:174" package=server
+time="2018-11-06 14:31:20.012" level=info msg="&{{2146782 map[en:Thornlands]} {OC 6255151 map[zh-CN:大洋洲 de:Ozeanien en:Oceania es:Oceanía fr:Océanie ja:オセアニア pt-BR:Oceania ru:Океания]} {2077456 false AU map[fr:Australie ja:オーストラリア pt-BR:Austrália ru:Австралия zh-CN:澳大利亚 de:Australien en:Australia es:Australia]} {1000 -27.5575 153.2648 0 Australia/Brisbane} {4164} {2077456 false AU map[de:Australien en:Australia es:Australia fr:Australie ja:オーストラリア pt-BR:Austrália ru:Австралия zh-CN:澳大利亚]} {0 false  map[] } [{2152274 QLD map[en:Queensland pt-BR:Queensland ru:Квинсленд]}] {false false}}" line="server/DealHander.go:176" package=server
+time="2018-11-06 14:31:20.012" level=info msg="Query IP information does not exist!:123.2.2.1\n" line="server/DealHander.go:177" package=server
+time="2018-11-06 14:31:20.012" level=info msg="HandleIPServer running over" line="task/Info.go:94" package=tsak
