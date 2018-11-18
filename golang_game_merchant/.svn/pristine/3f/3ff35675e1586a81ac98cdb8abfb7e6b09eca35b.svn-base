@@ -1,0 +1,36 @@
+package model
+
+//IP黑名单
+type BlackIPList struct {
+	IP         string `json:"ip,omitempty"`
+	Area       string `json:"area,omitempty"`
+	Status     int
+	MerchantId int
+}
+
+func ListBlockedSource(mid int) ([]BlackIPList, error) {
+	var b []BlackIPList
+	if err := Db.Where("merchant_id = ?", mid).Find(&b).Error; err != nil {
+		return nil, err
+	}
+	return b, nil
+}
+
+//添加或解除 ip黑名单
+func IPaddrOperate(mid int, ip string, action string) error {
+	if action == "block" {
+		return Db.Create(BlackIPList{IP: ip, Status: 1, MerchantId: mid}).Error
+	}
+	Db.Where("merchant_id = ? AND ip = ?", mid, ip).Delete(BlackIPList{})
+	return nil
+}
+
+//添加访问来源地区黑名单
+func SourceAreaOperate(mid int, area, action string) error {
+	if action == "block" {
+		return Db.Create(BlackIPList{Area: area, Status: 1, MerchantId: mid}).Error
+	}
+
+	Db.Where("merchant_id = ? AND area = ? ", mid, area).Delete(BlackIPList{})
+	return nil
+}

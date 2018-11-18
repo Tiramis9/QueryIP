@@ -1,0 +1,96 @@
+package action
+
+import (
+	"golang_game_merchant/lib/utils"
+	"golang_game_merchant/model"
+	"net/http"
+
+	"github.com/gin-gonic/gin"
+	"github.com/sirupsen/logrus"
+)
+
+type blockReq struct {
+	IP   string `json:"ip"`
+	Area string `json:"area"`
+}
+
+func BlockIPAddr(c *gin.Context) {
+	ipAddrOperate(c, "block")
+}
+
+func UnblockIPAddr(c *gin.Context) {
+	ipAddrOperate(c, "unblock")
+}
+
+func BlockSourceArea(c *gin.Context) {
+	sourceAreaOperate(c, "block")
+}
+
+func UnblockSourceArea(c *gin.Context) {
+	sourceAreaOperate(c, "unblock")
+}
+
+// 屏蔽或解除 源IP地址访问
+func ipAddrOperate(c *gin.Context, action string) {
+	merchantID := 1
+
+	var req blockReq
+	if err := c.Bind(&req); err != nil {
+		logrus.Errorf("c.Bind(),%v", err)
+		RespParamErr(c)
+		return
+	}
+
+	//校验ip
+	if req.IP == "" || !utils.RegexpMatch("ip", req.IP) {
+		RespParamErr(c)
+		logrus.Errorf("invalid ip addr")
+		return
+	}
+
+	err := model.IPaddrOperate(merchantID, req.IP, action)
+	if err != nil {
+		RespServerErr(c)
+		return
+	}
+
+	res := gin.H{"code": 1, "data": nil, "msg": "ok"}
+	c.JSON(http.StatusOK, res)
+}
+
+func sourceAreaOperate(c *gin.Context, action string) {
+	merchantID := 1
+
+	var req blockReq
+	if err := c.Bind(&req); err != nil {
+		logrus.Errorf("c.Bind(),%v", err)
+		RespParamErr(c)
+		return
+	}
+
+	//校验ip
+	if req.Area == "" {
+		RespParamErr(c)
+		logrus.Errorf("invalid source location string")
+		return
+	}
+
+	err := model.SourceAreaOperate(merchantID, req.Area, action)
+	if err != nil {
+		RespServerErr(c)
+		return
+	}
+	res := gin.H{"code": 1, "data": nil, "msg": "ok"}
+	c.JSON(http.StatusOK, res)
+}
+
+func ListBlockedSource(c *gin.Context) {
+	merchantID := 1
+
+	b, err := model.ListBlockedSource(merchantID)
+	if err != nil {
+		RespServerErr(c)
+	}
+	res := gin.H{"code": http.StatusOK, "data": b, "msg": "ok"}
+	c.JSON(http.StatusOK, res)
+}

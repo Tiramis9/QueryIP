@@ -1,0 +1,23 @@
+package model
+
+import (
+	"testing"
+)
+
+func TestGetMemberBill(t *testing.T) {
+	db := connectDb()
+	defer db.Close()
+
+	m := make(map[string]interface{})
+	//m["user_name"] = "liu"
+	merchantId := 1
+	list, count, err := GetMemberBillList(db,  merchantId,1, 10, m)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	t.Log(count)
+	for i := range list {
+		t.Logf("%#v", list[i])
+	}
+}

@@ -1,0 +1,156 @@
+package action
+
+import (
+	"github.com/gin-gonic/gin"
+	"golang_game_merchant/global/status"
+	"golang_game_merchant/model"
+)
+
+type UserClassEditReq struct {
+	Id                 int    `json:"id" binding:"required"`
+	ClassName          string `json:"class_name"`           //层级
+	Remark             string `json:"remark"`               //备注
+	SupportMerchantPay string `json:"support_merchant_pay"` //支持的商户支付通道,eg:1,4,6,8
+	WithdrawLimitCount int    `json:"withdraw_limit_count"` //单日提款次数上限 -1为不限制提现次数,0将无法提现
+	RuleId             int    `json:"rule_id"`              //反水规则id
+	IsFs               int    `json:"is_fs"`                //0不支持反水;1支持反水
+}
+
+type UserClassAddReq struct {
+	ClassName          string `json:"class_name"`           //层级
+	Remark             string `json:"remark"`               //备注
+	SupportMerchantPay string `json:"support_merchant_pay"` //支持的商户支付通道,eg:1,4,6,8
+	WithdrawLimitCount int    `json:"withdraw_limit_count"` //单日提款次数上限 -1为不限制提现次数,0将无法提现
+	RuleId             int    `json:"rule_id"`              //反水规则id
+	IsFs               int    `json:"is_fs"`                //0不支持反水;1支持反水
+}
+
+type MerchantUserClassList struct {
+	Id        int    `json:"id"`
+	ClassName string `json:"class_name"`
+}
+
+//层级列表返回
+type MerchantUserClassListResp struct {
+	List []MerchantUserClassList `json:"list"`
+}
+
+//层级详细信息
+type UserClassInfoResp struct {
+	Id                 int    `json:"id" binding:"required"`
+	ClassName          string `json:"class_name"`           //层级
+	Remark             string `json:"remark"`               //备注
+	SupportMerchantPay string `json:"support_merchant_pay"` //支持的商户支付通道,eg:1,4,6,8
+	WithdrawLimitCount int    `json:"withdraw_limit_count"` //单日提款次数上限 -1为不限制提现次数,0将无法提现
+	RuleId             int    `json:"rule_id"`              //反水规则id
+	IsFs               int    `json:"is_fs"`                //0不支持反水;1支持反水
+	MemberNum          int    `json:"member_num"`
+}
+
+/**
+用户层级列表
+*/
+func UserClassList(c *gin.Context) {
+	var data MerchantUserClassListResp
+	//todo 从token获取 merchantId
+	merchantId := 1
+	list, err := model.GetMerchantUserClassList(model.Db, merchantId)
+	if err != nil {
+		RespServerErr(c)
+		return
+	}
+	for i := range list {
+		temp := MerchantUserClassList{
+			Id:        list[i].Id,
+			ClassName: list[i].ClassName,
+		}
+		data.List = append(data.List, temp)
+	}
+	RespJson(c, status.OK, data)
+}
+
+/**
+代理层级详情
+*/
+func UserClassInfo(c *gin.Context) {
+	var macReq UserClassEditReq
+	c.BindJSON(&macReq)
+	merchantId := 1
+	info, err, count := model.GetMerchantUserClassInfo(model.Db, merchantId, macReq.Id)
+	if err != nil {
+		RespServerErr(c)
+		return
+	}
+
+	if info == nil {
+		RespSuccess(c)
+		return
+	}
+
+	res := UserClassInfoResp{
+		Id:                 info.Id,
+		ClassName:          info.ClassName,
+		SupportMerchantPay: info.SupportMerchantPay,
+		WithdrawLimitCount: info.WithdrawLimitCount,
+		RuleId:             info.RuleId,
+		IsFs:               info.IsFs,
+		MemberNum:          count,
+	}
+	RespJson(c, status.OK, res)
+}
+
+/**
+代理层级编辑
+*/
+/*func UserClassEdit(c *gin.Context) {
+	var macReq UserClassEditReq
+	var mac model.MerchantAgentClass
+	fields := make(map[string]interface{})
+	c.BindJSON(&macReq)
+	merchantId := 1
+	mac.Id = macReq.Id
+	timestamp := time.Now().Unix()
+	fields["class_name"] = macReq.ClassName
+	fields["mode"] = macReq.Mode
+	fields["fd_sport"] = macReq.FdSport
+	fields["fd_lottery"] = macReq.FdLottery
+	fields["fd_people"] = macReq.FdPeople
+	fields["fd_chess"] = macReq.FdChess
+	fields["fd_bet_user"] = macReq.FdBetUser
+	fields["fd_bet_bill"] = macReq.FdBetBill
+	fields["bonus_cut_rate"] = macReq.BonusCutRate
+	fields["reback_cut_rate"] = macReq.RebackCutRate
+	fields["fc_team_profit"] = macReq.FcTeamProfit
+	fields["fc_sport"] = macReq.FcSport
+	fields["fc_lottery"] = macReq.FcLottery
+	fields["fc_people"] = macReq.FcPeople
+	fields["fc_chess"] = macReq.FcChess
+	fields["fc_bet_user"] = macReq.FcBetUser
+	fields["fc_bet_bill"] = macReq.FcBetBill
+	fields["spread_award"] = macReq.SpreadAward
+	fields["create_time"], fields["update_time"] = timestamp, timestamp
+	fmt.Println(fields)
+	_, err := mac.UpdateMerchantAgentClass(model.Db, merchantId, fields)
+	if err != nil {
+		RespServerErr(c)
+		return
+	}
+	RespSuccess(c)
+}*/
+
+/**
+代理层级删除
+*/
+/*func UserClassDel(c *gin.Context) {
+	var macReq UserClassEditReq
+	var mac model.MerchantAgentClass
+	c.BindJSON(&macReq)
+	mac.Id = macReq.Id
+	merchantId := 1
+	info, err := mac.DelMerchantAgentClass(model.Db, merchantId)
+	if err != nil {
+		RespServerErr(c)
+		return
+	}
+	RespJson(c, status.OK, info)
+}*/

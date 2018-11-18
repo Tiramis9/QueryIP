@@ -1,0 +1,81 @@
+package model
+
+import (
+	"errors"
+	"strconv"
+
+	"github.com/jinzhu/gorm"
+)
+
+type BizReport struct {
+	SummaryUserBill // 一览表
+	FeatureList     // `json:"data"`             // 游戏列表
+	TipsList        // `json:"tips_list"`        // 打赏小费列表
+	GameActiveList  // `json:"game_active_list"` // 游戏活动列表
+}
+type FeatureList struct {
+	Chess `json:"chess"`
+	Game  `json:"game"`
+}
+type Chess struct {
+}
+type Game struct {
+}
+type TipsList struct {
+}
+type GameActiveList struct {
+	pt_Game `json:"pt_game"`
+}
+type pt_Game struct {
+}
+type SummaryUserBill struct {
+	New_register    int     // `json:"new_register"`    // 新注册会员 .
+	Bonus_amount    float64 // `json:"bonus_amount"`    // 红利 ..
+	Rebate          float64 // `json:"rebate"`          // 反水 .
+	Recharge_amount float64 // `json:"recharge_amount"` // 充值金额 .
+	Recharge_member int     // `json:"recharge_member"` // 充值会员 .
+	Withdraw_amount float64 // `json:"withdraw_amount"` // 提现 .
+	Effective_bet   float64 // `json:"effective_bet"`   // 有效投注
+	Win             float64 // `json:"win"`             // 输赢结果
+}
+
+func StringtoInt(message string) int {
+	date, err := strconv.Atoi(message)
+	if err != nil {
+		panic(err)
+	}
+	return date
+}
+func GetMerchantAnnouncement(db *gorm.DB, date map[string]int) (*BizReport, error) {
+	start_time := date["start_time"]
+	end_time := date["end_time"]
+	if start_time == 0 || end_time == 0 {
+		return nil, errors.New("time are invaild")
+	}
+	bizReport := new(BizReport)
+	if err := db.Table(`user`).Where("reg_time>= ? AND reg_time <=? AND status=1 ",
+		start_time, end_time).Count(&(bizReport.New_register)).Error; err != nil {
+		return nil, err
+	}
+	if err := db.Table(`user_bill`).Where("create_time>= ? AND create_time <=? AND status=1 AND code=100",
+		start_time, end_time).Count(&(bizReport.Recharge_member)).Error; err != nil {
+		return nil, err
+	}
+	if err := db.Debug().Table("user_bill").Select(`SUM(sett_amt) AS rebate `).Where("create_time>= ? AND create_time <=? AND status=1  AND code=800",
+		start_time, end_time).Find(bizReport).Error; err != nil {
+		return nil, err
+	}
+	if err := db.Debug().Table("user_bill").Select(`SUM(sett_amt) AS withdraw_amount `).Where("create_time>= ? AND create_time <=? AND status=1   AND code=200",
+		start_time, end_time).Find(bizReport).Error; err != nil {
+		return nil, err
+	}
+	if err := db.Debug().Table("user_bill").Select(`SUM(sett_amt) AS bonus_amount `).Where("create_time>= ? AND create_time <=? AND status=1  AND code=400",
+		start_time, end_time).Find(bizReport).Error; err != nil {
+		return nil, err
+	}
+	if err := db.Debug().Table("user_bill").Select(`SUM(sett_amt) AS recharge_amount `).Where("create_time>= ? AND create_time <=? AND status=1   AND code=100",
+		start_time, end_time).Find(bizReport).Error; err != nil {
+		return nil, err
+	}
+	return bizReport, nil
+}

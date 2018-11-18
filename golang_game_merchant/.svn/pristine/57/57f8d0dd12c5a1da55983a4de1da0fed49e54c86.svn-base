@@ -1,0 +1,285 @@
+package model
+
+import (
+	"github.com/jinzhu/gorm"
+	"github.com/sirupsen/logrus"
+)
+
+type AgentBrokerageReport struct {
+	Id             int     `json:"id"`
+	AgentId        int     `json:"agent_id"`
+	StartTime      int64   `json:"start_time"`
+	EndTime        int64   `json:"end_time"`
+	EffectUser     int     `json:"effect_user"`
+	BetTotal       float64 `json:"bet_total"`
+	RechargeTotal  float64 `json:"recharge_total"`
+	BonusTotal     float64 `json:"bonus_total"`
+	BrokerageTotal float64 `json:"brokerage_total"`
+	FeeTotal       float64 `json:"fee_total"`
+	OrgExpense     float64 `json:"org_expense"`
+	RebackTotal    float64 `json:"rebate_total"`
+	WinTotal       float64 `json:"win_total"`
+	WithdrawTotal  float64 `json:"withdraw_total"`
+	CreateTime     int64   `json:"create_time"`
+	UpdateTime     int64   `json:"update_time"`
+	DealTime       int64   `json:"deal_time"`
+}
+
+type AgentUserBill struct {
+	Id       int     `json:"id"`
+	Code     int     `json:"code"`
+	TotalAmt float64 `json:"total_amt"`
+}
+
+type AgentSubUserReport struct {
+	Id            int     `json:"id"`
+	UserName      string  `json:"user_name"`
+	BetTotal      float64 `json:"bet_total"`
+	RechargeTotal float64 `json:"recharge_total"`
+	BonusTotal    float64 `json:"bonus_total"`
+	FeeTotal      float64 `json:"fee_total"`
+	RebackTotal   float64 `json:"rebate_total"`
+	WinTotal      float64 `json:"win_total"`
+	WithdrawTotal float64 `json:"withdraw_total"`
+}
+
+/*map[string]interface{}{"abr.merchant_id": where["merch_id"]}*/
+/**
+获取代理报表列表（佣金历史）
+*/
+func GetAgentBrokerageReportList(db *gorm.DB, merchId int, where map[string]interface{}, page int, pageCount int) ([]AgentBrokerageReport, error) {
+	//fmt.Println(where)
+	var whereStr string
+	params := []interface{}{}
+	params = append(params, merchId)
+	if v, ok := where["user_name"]; ok {
+		whereStr += " AND ag.user_name=?"
+		params = append(params, v)
+	}
+	if v, ok := where["start_time"]; ok {
+		whereStr += " AND abr.start_time<=?"
+		params = append(params, v)
+	}
+	if v, ok := where["end_time"]; ok {
+		whereStr += " AND abr.end_time>=?"
+		params = append(params, v)
+	}
+	var agBrokerageList []AgentBrokerageReport
+	if err := db.Table(`agent_brokerage_report AS abr`).Joins(`
+		LEFT JOIN agent AS ag ON abr.agent_id=ag.id`).Select(`abr.*`).
+		Where("ag.merchant_id=?"+whereStr, params...).Offset((page - 1) * pageCount).Limit(pageCount).Find(&agBrokerageList).Error; err != nil {
+		if err == gorm.ErrRecordNotFound {
+			return nil, nil
+		}
+		logrus.Error(err)
+		return nil, err
+	}
+	return agBrokerageList, nil
+}
+
+func GetAgentBrokerageReportCount(db *gorm.DB, merchId int, where map[string]interface{}) (int, error) {
+	//fmt.Println(where)
+	var whereStr string
+	params := []interface{}{}
+	params = append(params, merchId)
+	if v, ok := where["user_name"]; ok {
+		whereStr += " AND ag.user_name=?"
+		params = append(params, v)
+	}
+	if v, ok := where["start_time"]; ok {
+		whereStr += " AND abr.start_time<=?"
+		params = append(params, v)
+	}
+	if v, ok := where["end_time"]; ok {
+		whereStr += " AND abr.end_time>=?"
+		params = append(params, v)
+	}
+	var total int
+	if err := db.Table(`agent_brokerage_report AS abr`).Joins(`
+		LEFT JOIN agent AS ag ON abr.agent_id=ag.id`).Select(`abr.*`).
+		Where("ag.merchant_id=?"+whereStr, params...).Count(&total).Error; err != nil {
+		if err == gorm.ErrRecordNotFound {
+			return total, nil
+		}
+		logrus.Error(err)
+		return 0, err
+	}
+	return total, nil
+}
+
+/**
+编辑代理报表信息
+*/
+func (abr AgentBrokerageReport) UpdateAgentBrokerageReport(db *gorm.DB, merchId int, fields map[string]interface{}) (bool, error) {
+	if err := db.Model(&abr).Where("merchant_id=?", merchId).Updates(fields).Error; err != nil {
+		logrus.Error(err)
+		return false, err
+	}
+	return true, nil
+}
+
+/**
+获取所有代理的统计报表(佣金报表)
+*/
+func GetAgentReportList(db *gorm.DB, merchId int, startTime int64, endTime int64, page int, pageCount int) ([]AgentBrokerageReport, error) {
+	var agBrokerageList []AgentBrokerageReport
+	//先查符合条件的代理
+	if err := db.Table(`agent as ag`).Where("ag.merchant_id=?", merchId).Offset((page - 1) * pageCount).Limit(pageCount).Find(&agBrokerageList).Error; err != nil {
+		if err == gorm.ErrRecordNotFound {
+			return nil, nil
+		}
+		logrus.Error(err)
+		return nil, err
+	}
+	//再查每个代理下的记录
+	for i := range agBrokerageList {
+		//先查询充值、提现、红利、手续费、反水总计
+		var aubList []AgentUserBill
+		if err := db.Table(`agent as ag`).Joins(`
+		LEFT JOIN user AS us ON us.parent_id=ag.id`).Joins(`LEFT JOIN user_bill AS usb ON usb.user_id=us.id`).Select(`ag.id,usb.code,sum(usb.sett_amt) as total_amt`).
+			Where("ag.id=? AND usb.create_time>? AND usb.create_time<=?", agBrokerageList[i].Id, startTime, endTime).Group("usb.code").Find(&aubList).Error; err != nil {
+			if err == gorm.ErrRecordNotFound {
+				return nil, nil
+			}
+			logrus.Error(err)
+			return nil, err
+		}
+		for _, v := range aubList {
+			if v.Code == 100 { //充值
+				agBrokerageList[i].RechargeTotal = v.TotalAmt
+			}
+			if v.Code == 200 { //提现
+				agBrokerageList[i].WithdrawTotal = v.TotalAmt
+			}
+			if v.Code == 400 { //红利
+				agBrokerageList[i].BonusTotal = v.TotalAmt
+			}
+			if v.Code == 500 { //手续费
+				agBrokerageList[i].FeeTotal = v.TotalAmt
+			}
+			if v.Code == 800 { //反水
+				agBrokerageList[i].RebackTotal = v.TotalAmt
+			}
+		}
+		//再查询投注、输赢、有效会员数
+	}
+	return agBrokerageList, nil
+}
+
+/**
+获取所有代理的统计数量(佣金报表)
+*/
+func GetAgentReportCount(db *gorm.DB, merchId int) (int, error) {
+	var total int
+	//先查符合条件的代理
+	if err := db.Table(`agent as ag`).
+		Where("ag.merchant_id=?", merchId).Group("ag.id").Count(&total).Error; err != nil {
+		if err == gorm.ErrRecordNotFound {
+			return total, nil
+		}
+		logrus.Error(err)
+		return 0, err
+	}
+	return total, nil
+}
+
+/**
+获取单个代理下用户的统计报表(代理报表)
+*/
+func GetSubUserReportList(db *gorm.DB, agentId int, merchId int, startTime int64, endTime int64, page int, pageCount int) ([]AgentSubUserReport, error) {
+	var agsUserList []AgentSubUserReport
+	//先查下属用户
+	if err := db.Table(`user`).Select(`id,user_name`).
+		Where("parent_id=? AND merchant_id=?", agentId, merchId).Offset((page - 1) * pageCount).Limit(pageCount).Find(&agsUserList).Error; err != nil {
+		if err == gorm.ErrRecordNotFound {
+			return nil, nil
+		}
+		logrus.Error(err)
+		return nil, err
+	}
+	//再查每个用户下的记录
+	for i := range agsUserList {
+		//先查询充值、提现、红利、手续费、反水总计
+		var aubList []AgentUserBill
+		if err := db.Table(`user_bill`).Select(`code,sum(sett_amt) as total_amt`).
+			Where("user_id=? AND create_time>? AND create_time<=?", agsUserList[i].Id, startTime, endTime).Group("code").Find(&aubList).Error; err != nil {
+			if err == gorm.ErrRecordNotFound {
+				return nil, nil
+			}
+			logrus.Error(err)
+			return nil, err
+		}
+		for _, v := range aubList {
+			if v.Code == 100 { //充值
+				agsUserList[i].RechargeTotal = v.TotalAmt
+			}
+			if v.Code == 200 { //提现
+				agsUserList[i].WithdrawTotal = v.TotalAmt
+			}
+			if v.Code == 400 { //红利
+				agsUserList[i].BonusTotal = v.TotalAmt
+			}
+			if v.Code == 500 { //手续费
+				agsUserList[i].FeeTotal = v.TotalAmt
+			}
+			if v.Code == 800 { //反水
+				agsUserList[i].RebackTotal = v.TotalAmt
+			}
+		}
+		//再查询投注、输赢、有效会员数
+	}
+	return agsUserList, nil
+}
+
+/**
+获取单个代理下用户的统计报表条数(代理报表)
+*/
+func GetSubUserReportCount(db *gorm.DB, agentId int, merchId int) (int, error) {
+	var total int
+	//先查下属用户记录条数
+	if err := db.Table(`user`).Where("parent_id=? AND merchant_id=?", agentId, merchId).Count(&total).Error; err != nil {
+		if err == gorm.ErrRecordNotFound {
+			return total, nil
+		}
+		logrus.Error(err)
+		return 0, err
+	}
+	return total, nil
+}
+
+/**
+获取单个代理下用户的报表记录总计（代理报表）
+*/
+func GetSubUserReportTotal(db *gorm.DB, agentId int, merchId int, startTime int64, endTime int64) (AgentSubUserReport, error) {
+	//查询总计
+	var aubList []AgentUserBill
+	var asuReport AgentSubUserReport
+	if err := db.Table(`user_bill as usb`).Joins("LEFT JOIN user as us ON usb.user_id=us.id").Select(`usb.code,sum(usb.sett_amt) as total_amt`).
+		Where("us.parent_id=? AND us.merchant_id=? AND usb.create_time>? AND usb.create_time<=?", agentId, merchId, startTime, endTime).
+		Group("code").Find(&aubList).Error; err != nil {
+		if err == gorm.ErrRecordNotFound {
+			return asuReport, nil
+		}
+		logrus.Error(err)
+		return asuReport, err
+	}
+	asuReport.UserName = "总计"
+	for _, v := range aubList {
+		if v.Code == 100 { //充值
+			asuReport.RechargeTotal = v.TotalAmt
+		}
+		if v.Code == 200 { //提现
+			asuReport.WithdrawTotal = v.TotalAmt
+		}
+		if v.Code == 400 { //红利
+			asuReport.BonusTotal = v.TotalAmt
+		}
+		if v.Code == 500 { //手续费
+			asuReport.FeeTotal = v.TotalAmt
+		}
+		if v.Code == 800 { //反水
+			asuReport.RebackTotal = v.TotalAmt
+		}
+	}
+	return asuReport, nil
+}

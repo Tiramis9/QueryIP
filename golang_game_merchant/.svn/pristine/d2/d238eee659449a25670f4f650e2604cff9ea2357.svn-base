@@ -1,0 +1,16 @@
+package model
+
+import (
+	"testing"
+)
+
+func TestConnectDb(t *testing.T) {
+	db := connectDb()
+	defer db.Close()
+
+	if db == nil {
+		t.Fatal("connect db error")
+	}
+
+	t.Log("connect db success")
+}

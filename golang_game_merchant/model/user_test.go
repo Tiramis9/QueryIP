@@ -1,0 +1,85 @@
+package model
+
+import (
+	"testing"
+)
+
+func TestGetUserList(t *testing.T) {
+	db := connectDb()
+	defer db.Close()
+	m := make(map[string]interface{})
+	m["status"] = 1
+	res, count, err := GetUserList(db, 1, 1, 5, m)
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Log(count)
+	for _, m := range res {
+		t.Logf("%#v", m)
+	}
+}
+
+func TestMerchantUpdateUserBalance(t *testing.T) {
+	db := connectDb()
+	defer db.Close()
+
+	user := &User{
+		Id:         5,
+		MerchantId: 1,
+	}
+	err := user.MerchantUpdateUserBalance(db, 10)
+	if err != nil {
+		t.Fatal(err)
+	}
+}
+
+func TestGetUserInfo(t *testing.T) {
+	db := connectDb()
+	defer db.Close()
+
+	res, err := GetUserInfo(db, 50010, 1)
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Log(res)
+}
+
+func TestGetMerchantUserSimpleGroupList(t *testing.T) {
+	db := connectDb()
+	defer db.Close()
+
+	res, err := GetMerchantUserSimpleGroupList(db, 1)
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Log(res)
+}
+
+func TestAddMerchantUserGroup(t *testing.T) {
+	db := connectDb()
+	defer db.Close()
+	var mac MerchantUserGroup
+	mac.GroupName = "白银"
+	mac.MerchantId = 1
+	mac.FsSportRate = 1
+	res, err := mac.AddMerchantUserGroup(db)
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Log(res)
+}
+
+func TestGetRebateLog(t *testing.T) {
+	db := connectDb()
+	defer db.Close()
+	/*m := make(map[string]interface{})
+	m["user_name"] = "liul"
+	res, err, sum := RebateLogList(db, 1, 1, 5, m)
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Log(sum)
+	for _, m := range res {
+		t.Logf("%#v", m)
+	}*/
+}

@@ -1,0 +1,66 @@
+package action
+
+import (
+	"golang_game_merchant/model"
+	"net/http"
+
+	"github.com/gin-gonic/gin"
+	"github.com/sirupsen/logrus"
+)
+
+// type modifyReq struct {
+// 	WithdrawSimpleMax string `json:"withdraw_simple_max"`
+// 	WithdrawSimpleMin string `json:"withdraw_simple_min"`
+// 	AgentPlatUrl      string `json:"agent_plat_url"`
+// 	AgentSpreadUrl    string `json:"agent_spread_url"`
+// 	AppDownloadUrl    string `json:"app_download_url"`
+// 	ServiceOnlineUrl  string `json:"service_online_url"`
+// 	AppLogo           string `json:"app_logo"`
+// 	AllowIpMinute     int    `json:"allow_ip_minute"`
+// 	ActiveStatus      int    `json:"active_status"`
+// 	RegStatus         int    `json:"reg_status"`
+// }
+
+func QueryMerchantBasicInfo(c *gin.Context) {
+	bi, err := model.QueryMerchantBasicInfo()
+	if err != nil {
+		logrus.Errorf("model.QueryMerchantBasicInfo,%v\n", err)
+		RespServerErr(c)
+		return
+	}
+
+	res := gin.H{"code": 1, "data": bi, "msg": "ok"}
+	c.JSON(http.StatusOK, res)
+}
+
+func ModifyMerchantBasicInfo(c *gin.Context) {
+	var req model.BasicInfo
+	if err := c.Bind(&req); err != nil {
+		logrus.Errorf("c.Bind(),%v", err)
+		RespParamErr(c)
+		return
+	}
+
+	//todo  校验
+	if req.AgentPlatUrl == "" ||
+		req.AgentSpreadUrl == "" ||
+		req.AppDownloadUrl == "" ||
+		req.AppLogo == "" ||
+		req.ServiceOnlineUrl == "" ||
+		req.WithdrawSimpleMax == "" ||
+		req.WithdrawSimpleMin == "" {
+		logrus.Errorf("one of parameter is empty,%v", req)
+		RespParamErr(c)
+		return
+	}
+
+	err := model.ModifyMerchantBasicInfo(&req)
+	if err != nil {
+		logrus.Errorf("ModifyMerchantBasicInfo(),%v", err)
+		RespServerErr(c)
+		return
+	}
+
+	res := gin.H{"code": 1, "data": nil, "msg": "ok"}
+	c.JSON(http.StatusOK, res)
+}

@@ -1,0 +1,123 @@
+package action
+
+import (
+	"fmt"
+	"github.com/gin-gonic/gin"
+	"golang_game_merchant/global/status"
+	"golang_game_merchant/lib/utils"
+	"golang_game_merchant/model"
+)
+type AgentListReq struct {
+	UserName string `json:"user_name"`
+	Page int `json:"page"`
+	PageCount int `json:"page_count"`
+	AType int `json:"a_type"`
+}
+
+type AgentReq struct {
+	Id            int    `json:"id" binding:"required"`
+	TrueName      string `json:"true_name"`
+	Phone         string `json:"phone"`
+	Skype         string `json:"skype"`
+	Email         string `json:"email"`
+	Qq            string `json:"qq"`
+	Password       string `json:"password"`
+	UserClassId       int    `json:"user_class_id"`
+}
+
+/*
+获取代理列表
+*/
+func AgentList(c *gin.Context) {
+	//获取商户id
+	var data model.AgentList
+	var alReq AgentListReq
+	/*var merchId interface{}
+	var ok bool
+	/*if merchId,ok = c.Get("merchant_id");ok==false{
+		RespUnauthorized(c)
+	}
+	merchantId := merchId.(int)*/
+	c.BindJSON(&alReq)
+	merchantId := 1
+	//获取列表
+	agentList, err := model.GetAgentList(model.Db, merchantId, alReq.AType, alReq.UserName, alReq.Page, alReq.PageCount)
+	if err != nil {
+		RespServerErr(c)
+		return
+	}
+	data.List = agentList
+	//获取总数
+	total, err := model.GetAgentCount(model.Db, merchantId, alReq.AType, alReq.UserName)
+	if err != nil {
+		RespServerErr(c)
+		return
+	}
+	data.Total = total
+	RespJson(c, status.OK, data)
+}
+
+/**
+代理详情
+*/
+func AgentInfo(c *gin.Context) {
+	var agReq AgentReq
+	c.BindJSON(&agReq)
+	merchantId := 1
+	//agentId := 1
+	//获取列表
+	agentInfo, err := model.GetAgentInfo(model.Db, agReq.Id, merchantId)
+	if err != nil {
+		RespServerErr(c)
+		return
+	}
+	RespJson(c, status.OK, agentInfo)
+}
+
+/**
+代理更改信息
+*/
+func AgentEdit(c *gin.Context) {
+	//c.Bind()
+	var agReq AgentReq
+	c.BindJSON(&agReq)
+	fields := make(map[string]interface{})
+	agentId := agReq.Id
+	merchantId := 1
+	if agReq.UserClassId != 0 {
+		//获取层级id
+		//判断层级是否在层级列表中
+		//ToDo
+		fields["user_class_id"] = agReq.UserClassId
+	}else{
+		fields["true_name"] = agReq.TrueName
+		fields["phone"] = agReq.Phone
+		fields["email"] = agReq.Email
+		fields["qq"] = agReq.Qq
+		fields["skype"] = agReq.Skype
+		fields["password"] = agReq.Password
+		if fields["password"] != "" {
+			//先查询代理salt
+			agent, err := model.GetAgentInfoSimple(model.Db, agentId, merchantId)
+			if err != nil {
+				RespServerErr(c)
+				return
+			}
+			fmt.Println(agent)
+			if agent.Id == 0 {
+				RespUnauthorized(c)
+				return
+			}
+			salt := utils.Md5S(agent.Salt)
+			password := utils.Md5S(utils.Md5S(salt + fields["password"].(string)))
+			fields["password"] = password
+		}
+	}
+	where := map[string]interface{}{"id": agentId, "merchant_id": merchantId}
+	err := model.UpdateAgent(model.Db, where, fields)
+	if err != nil {
+		RespServerErr(c)
+		return
+	}
+	RespSuccess(c)
+}
