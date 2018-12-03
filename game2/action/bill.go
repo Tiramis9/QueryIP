@@ -1,0 +1,146 @@
+package action
+
+import (
+	"game2/global/status"
+	"game2/lib/utils"
+	"game2/model"
+	"github.com/sirupsen/logrus"
+	"time"
+
+	"github.com/gin-gonic/gin"
+)
+
+type ApplayWithdrawReq struct {
+	Money float64 `json:"money"`
+	Id    int     `json:"id"` //银行卡id
+	PayPass string `json:"pay_pass"`
+}
+
+type UserBillListReq struct {
+	Page      int   `json:"page"`
+	PageCount int   `json:"page_count"`
+	StartTime int64 `json:"start_time"`
+	EndTime   int64 `json:"end_time"`
+}
+
+//资金列表
+func UserBillList(c *gin.Context) {
+	var m UserBillListReq
+	id, ok := c.Get("user_id")
+	if !ok {
+		RespServerErr(c)
+		return
+	}
+	userId := int(id.(float64))
+	if err := c.BindJSON(&m); err != nil {
+		RespParamErr(c)
+		return
+	}
+
+	page, pageCount := InitPage(m.Page, m.PageCount)
+	startTime, endTime := InitTimeSearch(m.StartTime, m.EndTime)
+	//获取列表
+	data := make(map[string]interface{})
+	billList, err := model.GetUserBillListByUserId(model.Db, userId, page, pageCount, startTime, endTime)
+	if err != nil {
+		RespServerErr(c)
+		return
+	}
+	data["list"] = billList
+	//获取总数
+	total, err := model.GetUserBillCount(model.Db, userId, startTime, endTime)
+	if err != nil {
+		RespServerErr(c)
+		return
+	}
+	data["total"] = total
+	RespJson(c, status.OK, data)
+}
+
+func ApplayWithdraw(c *gin.Context) {
+	var m ApplayWithdrawReq
+	id, ok := c.Get("user_id")
+	if !ok {
+		RespServerErr(c)
+		return
+	}
+	userId := int(id.(float64))
+	merchantId, ok := c.Get("merchant_id")
+	if !ok {
+		RespServerErr(c)
+		return
+	}
+	merchId := int(merchantId.(float64))
+	if err := c.BindJSON(&m); err != nil {
+		logrus.Error(err)
+		RespParamErr(c)
+		return
+	}
+	//查看资金密码是否正确
+	user, err:=model.GetUserById(model.Db,m.Id)
+	if err!=nil||user==nil{
+		RespServerErr(c)
+		return
+	}
+	str := m.PayPass + user.Salt
+	payPassMd5 := utils.Md5V(utils.Md5V(str))
+	if user.PayPass!=payPassMd5{
+		RespJson(c,status.ErrPayPassError, nil)
+		return
+	}
+	//根据id获取用户卡号
+	userBank, err := model.GetUserBankInfo(model.Db, m.Id, userId)
+	if err != nil {
+		RespServerErr(c)
+		return
+	}
+	if userBank == nil{
+		RespParamErr(c)
+		return
+	}
+	now := time.Now().Unix()
+	userWithdraw := model.UserWithdraw{UserId: userId, Money: m.Money, CreateTime: now, CardNo: userBank.CardNo, MerchantId: merchId, Status: 1, OrderSn:utils.CreateOrderNo(userId)}
+	//fmt.Println(userWithdraw)
+	err, res := userWithdraw.ApplayWithdraw(model.Db)
+	if err != nil {
+		RespServerErr(c)
+		return
+	}
+	if res == 101 {
+		RespJson(c, status.ErrNoEnoughMoney, nil)
+	}
+	RespSuccess(c)
+}
+
+//账户统计
+func BillTotal(c *gin.Context) {
+	id, ok := c.Get("user_id")
+	if !ok {
+		RespServerErr(c)
+		return
+	}
+	userId := int(id.(float64))
+	//查询用户的资金明细统计
+	list, err := model.GetUserBillTotalByUserId(model.Db, userId)
+	if err != nil {
+		RespServerErr(c)
+		return
+	}
+	data := map[string]interface{}{"user_id": userId, "recharge": 0.00, "withdraw": 0.00, "bonus": 0.00, "rebate": 0.00}
+	//生成map
+	for _, v := range list {
+		if v.Code == 100 {
+			data["recharge"] = v.Total
+		}
+		if v.Code == 200 {
+			data["withdraw"] = v.Total
+		}
+		if v.Code == 400 {
+			data["bonus"] = v.Total
+		}
+		if v.Code == 500 {
+			data["rebate"] = v.Total
+		}
+	}
+	RespJson(c, status.OK, data)
+}

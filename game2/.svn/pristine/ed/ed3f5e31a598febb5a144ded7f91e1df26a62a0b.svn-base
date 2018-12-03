@@ -1,0 +1,185 @@
+package mg
+
+import (
+	"bytes"
+	"encoding/base64"
+	"encoding/json"
+	"fmt"
+	"game2/lib/game"
+	"game2/lib/utils"
+	"github.com/sirupsen/logrus"
+	"io/ioutil"
+	"net/http"
+	"strings"
+)
+
+type GameMG struct {
+	Host        string
+	ApiUserName string
+	ApiPassWord string
+	ParentId    string
+	ClientId    string
+	Secret      string
+}
+
+func NewMGGame() game.Game {
+	return &GameMG{
+		Host:        GameMGHost,
+		ApiUserName: GameMGApiUserName,
+		ApiPassWord: GameMGApiPassWord,
+		ParentId:    GameMGParentId,
+		ClientId:    GameMGClientId,
+		Secret:      GameMGClientSecret,
+	}
+}
+
+func init() {
+	game.Register("mg", NewMGGame)
+}
+
+/*func (mg *GameMG) DoLogin(m map[string]interface{}) (interface{}, error) {
+	sub_url := "/oauth/token"
+
+	http_method := "POST"
+	contentType := "query_string"
+	timeZone := m["time_zone"].(string)
+	currency := m["currency"].(string)
+	language := m["language"].(string)
+	txId := mg.ParentId
+
+	//base64加密
+	paramStrEncode := base64.StdEncoding.EncodeToString([]byte(mg.ClientId + ":" + mg.Secret))
+	auth := "Basic " + paramStrEncode
+
+	req := make(map[string]string)
+	req["grant_type"] = "password"   //代理名
+	req["username"] = mg.ApiUserName //应用账号
+	req["password"] = mg.ApiPassWord //应用账号密码
+
+	res, err := httpHandle(sub_url, http_method, auth, contentType, timeZone, currency, txId, language, req)
+
+	if err != nil {
+		return nil, err
+	}
+
+	fmt.Println(res)
+
+	return nil, err
+}*/
+
+func DoLogin(m map[string]interface{}) (interface{}, error) {
+	sub_url := "/oauth/token"
+
+	http_method := "POST"
+	contentType := "query_string"
+	timeZone := m["time_zone"].(string)
+	currency := m["currency"].(string)
+	language := m["language"].(string)
+	txId := GameMGParentId
+
+	//base64加密
+	paramStrEncode := base64.StdEncoding.EncodeToString([]byte(GameMGClientId + ":" + GameMGClientSecret))
+	auth := "Basic " + paramStrEncode
+
+	req := make(map[string]string)
+	req["grant_type"] = "password"      //代理名
+	req["username"] = GameMGApiUserName //应用账号
+	req["password"] = GameMGApiPassWord //应用账号密码
+
+	res, err := httpHandle(sub_url, http_method, auth, contentType, timeZone, currency, txId, language, req)
+
+	if err != nil {
+		logrus.Debug(err)
+		return nil, err
+	}
+
+	fmt.Println(res)
+
+	return nil, err
+}
+
+//会员注册
+func (mg *GameMG) Register(m map[string]interface{}) (interface{}, error) {
+
+	return nil, nil
+}
+
+//登录
+func (mg *GameMG) Login(m map[string]interface{}) (interface{}, error) {
+	return nil, nil
+}
+
+//查询余额
+func (mg *GameMG) GetBalance(m map[string]interface{}) (interface{}, error) {
+	return nil, nil
+}
+
+//中心金额转游戏金额
+func (mg *GameMG) Account2GameTransfer(m map[string]interface{}) (interface{}, error) {
+	return nil, nil
+}
+
+//游戏金额转中心金额
+func (mg *GameMG) Game2AccountTransfer(m map[string]interface{}) (interface{}, error) {
+	return nil, nil
+}
+
+//查询记录
+func (mg *GameMG) QueryRecord(m map[string]interface{}) (interface{}, error) {
+	return nil, nil
+}
+
+func httpHandle(reqUrl, method, auth, contentType, timeZone, currency, txId, language string, params map[string]string) ([]byte, error) {
+
+	client := &http.Client{}
+	var req *http.Request
+	var err error
+
+	apiUrl := GameMGHost + reqUrl
+	//dataStr := params
+
+	if contentType == "json" {
+		fmt.Println(11)
+		dataStr, err := json.Marshal(params)
+		if err != nil {
+			return nil, err
+		}
+		req, err = http.NewRequest(method, apiUrl, bytes.NewBuffer(dataStr))
+		if err != nil {
+			return nil, err
+		}
+		req.Header.Add("Content-Type", "application/json")
+	} else if contentType == "query_string" {
+		fmt.Println(22)
+		dataStr := utils.Http_build_query(params)
+		fmt.Println(dataStr)
+		fmt.Println(apiUrl)
+		req, err = http.NewRequest(method, apiUrl, strings.NewReader(dataStr))
+		if err != nil {
+			return nil, err
+		}
+	}
+	//设置header
+	req.Header.Add("Authorization", auth)
+	req.Header.Add("X-DAS-TZ", timeZone)
+	req.Header.Add("X-DAS-CURRENCY", currency)
+	req.Header.Add("X-DAS-TX-ID", txId)
+	req.Header.Add("X-DAS-LANG", language)
+
+	fmt.Println(req.Header)
+
+	resp, err := client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	fmt.Println(resp)
+
+	body, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return nil, err
+	}
+
+	return body, nil
+}

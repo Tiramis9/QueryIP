@@ -1,0 +1,198 @@
+package action
+
+import (
+	"fmt"
+	"game2/global/status"
+	"game2/lib/utils"
+	"game2/logic"
+	"game2/model"
+	"game2/service"
+	"net/http"
+
+	"github.com/gin-gonic/gin"
+)
+
+type AccountTransReq struct {
+	From int `json:"from" binding:"required"`
+	To int `json:"to" binding:"required"`
+	Amount float64 `json:"amount"`
+}
+
+//账户列表
+func AccountList(c *gin.Context) {
+	var data interface{}
+	userid, ok := c.Get("user_id")
+	if !ok {
+		res := gin.H{"code": 0, "data": data, "msg": "fail"}
+		c.JSON(http.StatusOK, res)
+		return
+	}
+	user_id := userid.(int)
+	fmt.Println(user_id)
+	merchant_id := 1
+	account := model.UserAccount{}
+	//转为整形
+	//获取列表
+	accountlist := account.GetAccountListByUserId(merchant_id)
+	data = accountlist
+	res := gin.H{"code": 1, "data": data, "msg": "ok"}
+	c.JSON(http.StatusOK, res)
+}
+
+//账户详情
+func AccountInfo(c *gin.Context) {
+	var data interface{}
+	var res map[string]interface{}
+	user_info := map[string]string{}
+	game_name := c.PostForm("game_name")
+	token := c.PostForm("token")
+	map_info := logic.UserInfoByRedis(token)
+	user_info["user_name"] = map_info["user_name"].(string)
+	//调用service
+	balance, ok := service.GameGetBalance(game_name, user_info)
+	if !ok {
+		res := gin.H{"code": 0, "data": nil, "msg": utils.ERR_NET_ERROR}
+		c.JSON(http.StatusOK, res)
+		return
+	}
+	data = map[string]interface{}{"game_balance": balance, "game_name": game_name}
+	res = gin.H{"code": 1, "data": data, "msg": "ok"}
+	c.JSON(http.StatusOK, res)
+}
+
+//账户间转移
+func AccountTrans(c *gin.Context) {
+	var m AccountTransReq
+	if err:=c.BindJSON(&m);err!=nil{
+		RespServerErr(c)
+		return
+	}
+	id, ok := c.Get("user_id")
+	if !ok {
+		RespServerErr(c)
+		return
+	}
+	userId := int(id.(float64))
+
+	if (m.From == 0 && m.To == 0) || (m.From != 0 && m.To !=0 ) {
+		RespParamErr(c)
+		return
+	}
+	account := m.From
+	if m.From == 0 {
+		account = m.To
+	}
+	if m.Amount<0{
+		RespParamErr(c)
+		return
+	}
+	//需要判断数组是否越界
+	count := len(utils.AccountType)
+	if account>count{
+		RespParamErr(c)
+		return
+	}
+	accountName := utils.AccountType[account-1];
+	accountModel := model.UserAccount{AccountName: accountName, UserId: userId, Money: m.Amount}
+	//获取列表
+	res, err := accountModel.TransAccount(model.Db, userId, m.From, m.To, m.Amount)
+	if err!=nil{
+		RespServerErr(c)
+		return
+	}
+	if res == 101{
+		RespJson(c,status.ErrNoEnoughMoney,nil)
+		return
+	}
+	if res == 500{
+		RespServerErr(c)
+		return
+	}
+	RespSuccess(c)
+}
+
+//游戏报表
+func AccountReport(c *gin.Context) {
+	var data interface{}
+	var suc = gin.H{"code": "1", "msg": "ok"}
+	userid, ok := c.Get("user_id")
+	if !ok {
+		res := gin.H{"code": 0, "data": data, "msg": "fail"}
+		c.JSON(http.StatusOK, res)
+		return
+	}
+	user_id := userid.(int)
+	start_time := c.PostForm("start_time")
+	end_time := c.PostForm("end_time")
+	//调用第三方接口
+	data1 := [...]map[string]interface{}{
+		{"game_name": "沙巴体育", "num": "100", "bill_amt": "200.00", "win": "30.00"},
+		{"game_name": "BB体育", "num": "100", "bill_amt": "100.00", "win": "-10.00"},
+		{"game_name": "NEW BB体育", "num": "100", "bill_amt": "101.00", "win": "20.00"},
+	}
+	data2 := [...]map[string]interface{}{
+		{"game_name": "沙巴体育", "num": "100", "bill_amt": "200.00", "win": "30.00"},
+		{"game_name": "BB体育", "num": "100", "bill_amt": "100.00", "win": "-10.00"},
+		{"game_name": "NEW BB体育", "num": "100", "bill_amt": "101.00", "win": "20.00"},
+	}
+	data3 := [...]map[string]interface{}{
+		{"game_name": "沙巴体育", "num": "100", "bill_amt": "200.00", "win": "30.00"},
+		{"game_name": "BB体育", "num": "100", "bill_amt": "100.00", "win": "-10.00"},
+		{"game_name": "NEW BB体育", "num": "100", "bill_amt": "101.00", "win": "20.00"},
+	}
+	data4 := [...]map[string]interface{}{
+		{"game_name": "沙巴体育", "num": "100", "bill_amt": "200.00", "win": "30.00"},
+		{"game_name": "BB体育", "num": "100", "bill_amt": "100.00", "win": "-10.00"},
+		{"game_name": "NEW BB体育", "num": "100", "bill_amt": "101.00", "win": "20.00"},
+	}
+	data5 := [...]map[string]interface{}{
+		{"game_name": "沙巴体育", "num": "100", "bill_amt": "200.00", "win": "30.00"},
+		{"game_name": "BB体育", "num": "100", "bill_amt": "100.00", "win": "-10.00"},
+		{"game_name": "NEW BB体育", "num": "100", "bill_amt": "101.00", "win": "20.00"},
+	}
+	count := [...]map[string]interface{}{
+		{"name": "sport", "bill_amt": "200.00", "win": "30.00"},
+		{"name": "lottery", "bill_amt": "100.00", "win": "-10.00"},
+		{"name": "real", "bill_amt": "101.00", "win": "20.00"},
+		{"name": "chess", "bill_amt": "101.00", "win": "20.00"},
+		{"name": "game", "bill_amt": "101.00", "win": "20.00"},
+	}
+	datas := map[string]interface{}{}
+	datas["sport"] = data1
+	datas["lottery"] = data2
+	datas["real"] = data3
+	datas["chess"] = data4
+	datas["game"] = data5
+	suc["data"] = datas
+	suc["start_time"] = start_time
+	suc["end_time"] = end_time
+	suc["user_id"] = user_id
+	suc["count"] = count
+	c.JSON(http.StatusOK, suc)
+}
+
+//打赏报表
+func AccountReward(c *gin.Context) {
+	var data interface{}
+	var suc = gin.H{"code": "1", "msg": "ok"}
+	userid, ok := c.Get("user_id")
+	if !ok {
+		res := gin.H{"code": 0, "data": data, "msg": "fail"}
+		c.JSON(http.StatusOK, res)
+		return
+	}
+	user_id := userid.(int)
+	start_time := c.PostForm("start_time")
+	end_time := c.PostForm("end_time")
+	//调用第三方接口
+	data = [...]map[string]interface{}{
+		{"game_name": "彩播", "reward": "200.00"},
+		{"game_name": "BB彩播", "reward": "100.00"},
+		{"game_name": "NEW BB彩播", "reward": "101.00"},
+	}
+	suc["data"] = data
+	suc["start_time"] = start_time
+	suc["end_time"] = end_time
+	suc["user_id"] = user_id
+	c.JSON(http.StatusOK, suc)
+}

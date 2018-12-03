@@ -1,0 +1,17 @@
+package agin
+
+import "testing"
+
+func TestCheckOrCreateGameAccount(t *testing.T) {
+	game := newGameAGin()
+
+	m := make(map[string]interface{})
+	m["ac_type"] = AcTypeTryPlay
+	m["login_name"] = "DJ9test"
+	m["password"] = "DJ9testpwd"
+	resp, err := game.checkOrCreateGameAccount(m)
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Logf("%#v", resp)
+}

@@ -1,0 +1,353 @@
+package ky
+
+import (
+	"encoding/json"
+	"fmt"
+	"game2/lib/encrypt"
+	"game2/lib/utils"
+	"time"
+)
+
+// 账号是否存在
+func (ky *GameKY) IsAccountExist(userId, merchantId int) (bool, error) {
+	return false, nil
+}
+
+// 注册
+func (ky *GameKY) Register(userId, merchantId int) error {
+	return nil
+}
+
+type AccountLoginReq struct {
+	BaseReq
+	Account  string  //会员账号
+	Money    float64 //上分的金额
+	OrderId  string  //流水号，代理编号+yyyyMMddHHmmssSSS+account
+	Ip       string  //玩家IP
+	LineCode string  //代理下面的站点标识，用来防止站点之间导分，长度10个字符以内的英文或数字
+	KindId   string  //游戏id
+}
+
+type AccountLoginResp struct {
+	S int    `json:"s"`
+	M string `json:"m"`
+	D struct {
+		Money float64 `json:"money"`
+		Code  int     `json:"code"`
+	} `json:"d"`
+}
+
+// 登录
+func (ky *GameKY) Login(req AccountLoginReq) (*AccountLoginResp, error) {
+	param := fmt.Sprintf("s=%v&account=%v&money=%v&orderid=%v&ip=%v&lineCode=%v&KindID=%v",
+		OperationTypeLogin, req.Account, req.Money, req.OrderId, req.Ip, req.LineCode, req.KindId)
+	req.Param = encrypt.AESEncrypt(param, ky.DesKey)
+	req.Key = encrypt.MD5(generateMd5Str(ky.Agent, req.TimeStamp, ky.Md5Key))
+	data, err := utils.HttpPostForm(channelHandleUrl, baseReq2Map(req.BaseReq))
+	if err != nil {
+		fmt.Println(err)
+		return nil, err
+	}
+
+	var resp AccountLoginResp
+	if err := json.Unmarshal(data, &resp); err != nil {
+		return nil, err
+	}
+
+	return &resp, nil
+}
+
+type GetSubScoreBalanceReq struct {
+	BaseReq
+	Account string
+}
+
+type GetSubScoreBalanceResp struct {
+	S int    `json:"s"`
+	M string `json:"m"`
+	D struct {
+		Money float64 `json:"money"`
+		Code  int     `json:"code"`
+	} `json:"d"`
+}
+
+// 获取可下分余额
+func (ky *GameKY) GetSubScoreBalance(req GetSubScoreBalanceReq) (*GetSubScoreBalanceResp, error) {
+	param := fmt.Sprintf("s=%v&account=%v", OperationTypeQuerySubScore, req.Account)
+	req.Param = encrypt.AESEncrypt(param, ky.DesKey)
+	req.Key = encrypt.MD5(generateMd5Str(ky.Agent, req.TimeStamp, ky.Md5Key))
+	data, err := utils.HttpPostForm(channelHandleUrl, baseReq2Map(req.BaseReq))
+	if err != nil {
+		fmt.Println(err)
+		return nil, err
+	}
+
+	var resp GetSubScoreBalanceResp
+	if err := json.Unmarshal(data, &resp); err != nil {
+		return nil, err
+	}
+
+	return &resp, nil
+}
+
+type AddScoreReq struct {
+	BaseReq
+	Account string
+	Money   float64
+	OrderId string
+}
+
+type AddScoreResp struct {
+	S int    `json:"s"`
+	M string `json:"m"`
+	D struct {
+		Code int `json:"code"`
+	} `json:"d"`
+}
+
+// 上分
+func (ky *GameKY) AddScore(req AddScoreReq) (*AddScoreResp, error) {
+	param := fmt.Sprintf("s=%v&account=%v&money=%v&orderid=%v",
+		OperationTypeAddScore, req.Account, req.Money, req.OrderId)
+	req.Param = encrypt.AESEncrypt(param, ky.DesKey)
+	req.Key = encrypt.MD5(generateMd5Str(ky.Agent, req.TimeStamp, ky.Md5Key))
+	data, err := utils.HttpPostForm(channelHandleUrl, baseReq2Map(req.BaseReq))
+	if err != nil {
+		fmt.Println(err)
+		return nil, err
+	}
+
+	var resp AddScoreResp
+	if err := json.Unmarshal(data, &resp); err != nil {
+		return nil, err
+	}
+
+	return &resp, nil
+}
+
+type SubScoreReq struct {
+	BaseReq
+	Account string
+	Money   float64
+	OrderId string
+}
+
+type SubScoreResp struct {
+	S int    `json:"s"`
+	M string `json:"m"`
+	D struct {
+		Money float64 `json:"money"`
+		Code  int     `json:"code"`
+	} `json:"d"`
+}
+
+// 下分
+func (ky *GameKY) SubScore(req SubScoreReq) (*SubScoreResp, error) {
+	param := fmt.Sprintf("s=%v&account=%v&money=%v&orderid=%v",
+		OperationTypeSubScore, req.Account, req.Money, req.OrderId)
+	req.Param = encrypt.AESEncrypt(param, ky.DesKey)
+	req.Key = encrypt.MD5(generateMd5Str(ky.Agent, req.TimeStamp, ky.Md5Key))
+	data, err := utils.HttpPostForm(channelHandleUrl, baseReq2Map(req.BaseReq))
+	if err != nil {
+		fmt.Println(err)
+		return nil, err
+	}
+
+	var resp SubScoreResp
+	if err := json.Unmarshal(data, &resp); err != nil {
+		return nil, err
+	}
+
+	return &resp, nil
+}
+
+type GetOrderInfoReq struct {
+	BaseReq
+	Account string
+	OrderId string
+}
+
+type GetOrderInfoResp struct {
+	S int    `json:"s"`
+	M string `json:"m"`
+	D struct {
+		Code   int `json:"code"`
+		Status int `json:"status"` //-1不存在，0成功，2失败
+	} `json:"d"`
+}
+
+// 查询订单状态
+func (ky *GameKY) GetOrderInfo(req GetOrderInfoReq) (*GetOrderInfoResp, error) {
+	param := fmt.Sprintf("s=%v&orderid=%v",
+		OperationTypeQueryOrder, req.OrderId)
+	req.Param = encrypt.AESEncrypt(param, ky.DesKey)
+	req.Key = encrypt.MD5(generateMd5Str(ky.Agent, req.TimeStamp, ky.Md5Key))
+	data, err := utils.HttpPostForm(channelHandleUrl, baseReq2Map(req.BaseReq))
+	if err != nil {
+		fmt.Println(err)
+		return nil, err
+	}
+
+	var resp GetOrderInfoResp
+	if err := json.Unmarshal(data, &resp); err != nil {
+		return nil, err
+	}
+
+	return &resp, nil
+}
+
+type IsOnlineReq struct {
+	BaseReq
+	Account string
+}
+
+type IsOnlineResp struct {
+	S int    `json:"s"`
+	M string `json:"m"`
+	D struct {
+		Code   int `json:"code"`
+		Status int `json:"status"` //-1不存在，0不在线，1在线
+	} `json:"d"`
+}
+
+// 查询在线状态
+func (ky *GameKY) IsOnline(req IsOnlineReq) (*IsOnlineResp, error) {
+	param := fmt.Sprintf("s=%v&account=%v",
+		OperationTypeQueryIsOnline, req.Account)
+	req.Param = encrypt.AESEncrypt(param, ky.DesKey)
+	req.Key = encrypt.MD5(generateMd5Str(ky.Agent, req.TimeStamp, ky.Md5Key))
+	data, err := utils.HttpPostForm(channelHandleUrl, baseReq2Map(req.BaseReq))
+	if err != nil {
+		fmt.Println(err)
+		return nil, err
+	}
+
+	var resp IsOnlineResp
+	if err := json.Unmarshal(data, &resp); err != nil {
+		return nil, err
+	}
+
+	return &resp, nil
+}
+
+type GetGameRecordReq struct {
+	BaseReq
+	StartTime int64 //毫秒
+	EndTime   int64 //毫秒，建议时间差为30s
+}
+
+type GetGameRecordResp struct {
+	S int    `json:"s"`
+	M string `json:"m"`
+	D struct {
+		Code            int    `json:"code"`
+		Count           int    `json:"count"`
+		ServerStartTime string `json:"serverStartTime"`
+		ServerEndTime   string `json:"serverStartTime"`
+		List            []struct {
+			GameId        string    `json:"GameID"`
+			Accounts      string    `json:"Accounts"`
+			ServerId      int       `json:"ServerID"`
+			KindId        int       `json:"KindID"`
+			TableId       int       `json:"TableID"`
+			ChairId       int       `json:"ChairID"`
+			UserCount     int       `json:"UserCount"`
+			CardValue     string    `json:"CardValue"`
+			CellScore     float64   `json:"CellScore"`
+			AllBet        float64   `json:"AllBet"`
+			Profit        float64   `json:"profit"`
+			Revenue       float64   `json:"Revenue"`
+			GameStartTime time.Time `json:"GameStartTime"`
+			GameEndTime   time.Time `json:"GameEndTime"`
+			ChannelId     int       `json:"ChannelID"`
+			LineCode      string    `json:"LineCode"`
+		} `json:"list"`
+	} `json:"d"`
+}
+
+// 查询注单
+func (ky *GameKY) GetGameRecord(req GetGameRecordReq) (*GetGameRecordResp, error) {
+	param := fmt.Sprintf("s=%v&startTime=%v&endTime=%v",
+		OperationTypeGetOrderRecord, req.StartTime, req.EndTime)
+	req.Param = encrypt.AESEncrypt(param, ky.DesKey)
+	req.Key = encrypt.MD5(generateMd5Str(ky.Agent, req.TimeStamp, ky.Md5Key))
+	data, err := utils.HttpPostForm(getRecordHandleUrl, baseReq2Map(req.BaseReq))
+	if err != nil {
+		fmt.Println(err)
+		return nil, err
+	}
+
+	var resp GetGameRecordResp
+	if err := json.Unmarshal(data, &resp); err != nil {
+		return nil, err
+	}
+
+	return &resp, nil
+}
+
+type GetTotalScoreReq struct {
+	BaseReq
+	Account string
+}
+
+type GetTotalScoreResp struct {
+	S int    `json:"s"`
+	M string `json:"m"`
+	D struct {
+		TotalMoney float64 `json:"totalMoney"`
+		FreeMoney  float64 `json:"freeMoney"`
+		Status     int     `json:"status"` //-1不存在，0不在线，1在线
+		Code       int     `json:"code"`
+	} `json:"d"`
+}
+
+// 查询用户总分
+func (ky *GameKY) GetUserTotalScore(req GetTotalScoreReq) (*GetTotalScoreResp, error) {
+	param := fmt.Sprintf("s=%v&account=%v", OperationTypeGetTotalScore, req.Account)
+	req.Param = encrypt.AESEncrypt(param, ky.DesKey)
+	req.Key = encrypt.MD5(generateMd5Str(ky.Agent, req.TimeStamp, ky.Md5Key))
+	data, err := utils.HttpPostForm(channelHandleUrl, baseReq2Map(req.BaseReq))
+	if err != nil {
+		fmt.Println(err)
+		return nil, err
+	}
+
+	var resp GetTotalScoreResp
+	if err := json.Unmarshal(data, &resp); err != nil {
+		return nil, err
+	}
+
+	return &resp, nil
+}
+
+type KickUserOffLineReq struct {
+	BaseReq
+	Account string
+}
+
+type KickUserOffLineResp struct {
+	S int    `json:"s"`
+	M string `json:"m"`
+	D struct {
+		Code int `json:"code"`
+	} `json:"d"`
+}
+
+// 踢玩家下线
+func (ky *GameKY) KickUserOffLine(req KickUserOffLineReq) (*KickUserOffLineResp, error) {
+	param := fmt.Sprintf("s=%v&account=%v", OperationTypeKickUserOffline, req.Account)
+	req.Param = encrypt.AESEncrypt(param, ky.DesKey)
+	req.Key = encrypt.MD5(generateMd5Str(ky.Agent, req.TimeStamp, ky.Md5Key))
+	data, err := utils.HttpPostForm(channelHandleUrl, baseReq2Map(req.BaseReq))
+	if err != nil {
+		fmt.Println(err)
+		return nil, err
+	}
+
+	var resp KickUserOffLineResp
+	if err := json.Unmarshal(data, &resp); err != nil {
+		return nil, err
+	}
+
+	return &resp, nil
+}

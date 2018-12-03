@@ -1,0 +1,118 @@
+package action
+
+import (
+	"fmt"
+	"game2/model"
+	"net/http"
+	//"reflect"
+	"strconv"
+	"time"
+	"game2/utils"
+
+	"github.com/gin-gonic/gin"
+)
+
+//消息列表
+func MessageList(c *gin.Context) {
+	var data interface{}
+	total := 0
+	next_page := 1
+	userid, ok := c.Get("user_id")
+	fmt.Println(userid)
+	if !ok {
+		res := gin.H{"code": 0, "data": data, "msg": "fail"}
+		c.JSON(http.StatusOK, res)
+		return
+	}
+	user_id := userid.(int)
+	page := c.PostForm("page")
+	pagecount := c.PostForm("page_count")
+	message := model.Message{}
+	//检查page、pagecount是否为""
+	page = utils.CheckEmptyStr(page, utils.DEFAULT_PAGE)
+	pagecount = utils.CheckEmptyStr(pagecount, utils.DEFAULT_PAGECOUNT)
+	//转为整形
+	page_i, err := strconv.Atoi(page)
+	if err != nil {
+		fmt.Println(err)
+		res := gin.H{"code": 0, "data": data, "msg": "fail"}
+		c.JSON(http.StatusOK, res)
+		return
+	}
+	page_count_i, err := strconv.Atoi(pagecount)
+	if err != nil {
+		fmt.Println(err)
+		res := gin.H{"code": 0, "data": data, "msg": "fail"}
+		c.JSON(http.StatusOK, res)
+		return
+	}
+	ch := make(chan int)
+	defer close(ch)
+	//获取列表
+	go func() {
+		messlist := message.GetMessageList(user_id, page_i, page_count_i)
+		data = messlist
+		ch <- 1
+	}()
+	//获取总数
+	go func() {
+		total = message.GetMessageCount(user_id)
+		next_page = page_i + 1
+		ch <- 1
+	}()
+	//等待通道数结束
+	for i := 0; i < 2; i++ {
+		<-ch
+	}
+	res := gin.H{"code": 1, "data": data, "msg": "ok", "total": total, "next_page": next_page}
+	c.JSON(http.StatusOK, res)
+}
+
+//消息详情
+func MessageInfo(c *gin.Context) {
+	id := c.PostForm("id")
+	id_i, err := strconv.Atoi(id)
+	if err != nil {
+		fmt.Println(err)
+		c.JSON(http.StatusOK, gin.H{"code": "0", "msg": "fail"})
+		return
+	}
+	userid, ok := c.Get("user_id")
+	if !ok {
+		res := gin.H{"code": 0, "msg": "fail"}
+		c.JSON(http.StatusOK, res)
+		return
+	}
+	user_id := userid.(int)
+	message := model.Message{}
+	data := message.GetMessageInfo(id_i, user_id)
+	res := gin.H{"code": "0", "msg": "fail"}
+	if data.Id != 0 {
+		if data.Have_read == 0 {
+			//如果未读，则将消息更新为已读
+			message.ReadMessage(id_i, time.Now().Unix())
+		}
+		res = gin.H{"code": "1", "data": data, "msg": "ok"}
+	} else {
+		res = gin.H{"code": "1", "data": nil, "msg": "ok"}
+	}
+	c.JSON(http.StatusOK, res)
+}
+
+//读取消息
+func MessageRead(c *gin.Context) {
+	id := c.PostForm("id")
+	id_i, err := strconv.Atoi(id)
+	if err != nil {
+		fmt.Println(err)
+		c.JSON(http.StatusOK, gin.H{"code": "0", "msg": "fail"})
+		return
+	}
+	message := model.Message{}
+	ok := message.ReadMessage(id_i, 1121212)
+	res := gin.H{"code": "0", "msg": "fail"}
+	if ok {
+		res = gin.H{"code": "1", "msg": "ok"}
+	}
+	c.JSON(http.StatusOK, res)
+}

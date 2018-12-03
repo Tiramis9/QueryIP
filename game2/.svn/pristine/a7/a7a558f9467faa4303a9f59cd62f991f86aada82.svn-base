@@ -1,0 +1,131 @@
+package model
+
+import (
+	"game2/lib/utils"
+	"game2/service"
+	"github.com/jinzhu/gorm"
+	"github.com/sirupsen/logrus"
+	"time"
+)
+
+type UserAccount struct {
+	GameName    string  `json:"game_name,omitempty"`
+	AccountName string  `json:"account_name,omitempty"`
+	UserId      int     `json:"user_id,omitempty"`
+	Money       float64 `json:"money,omitempty"`
+}
+//INSERT INTO user_account_bill (account_name, user_id, money, ok, " + "old_balance, new_balance, bill_no, create_time, update_time) values(?,?,?,?,?,?,?,?,?)
+type UserAccountBill struct {
+	AccountName string `json:"account_name"`
+	UserId int `json:"user_id"`
+	Money float64 `json:"money"`
+	Ok int `json:"ok"`
+	OldBalance float64 `json:"old_balance"`
+	NewBalance float64 `json:"new_balance"`
+	BillNo string `json:"bill_no"`
+	CreateTime int64 `json:"create_time"`
+	UpdateTime int64 `json:"update_time"`
+}
+
+type UserAccountInterface interface {
+	GetAccountByUserId()
+}
+
+type Account struct {
+	Channel string `json:"game_name"`
+	GameBalance float64 `json:"game_balance"`
+}
+
+func GetAccountListByUserId(db *gorm.DB, merchantId int) ([]Account,error) {
+	var m []Account
+	if err:= db.Table("merchant_game mg").Joins("LEFT JOIN sys_game sg ON mg.game_id=sg.id").
+		Select("sg.channel").Where("mg.merchant_id=?", merchantId).Group("sg.channel").Find(&m).Error;err!=nil{
+			if err ==gorm.ErrRecordNotFound{
+				return nil,nil
+			}
+			return nil,err
+	}
+	return m,nil
+}
+
+func (u UserAccount) TransAccount(db *gorm.DB, userId int, from int, to int, amount float64) (int, error) {
+	var user User
+	//从什么账户转至什么账户(开启事务)
+	tx := db.Begin()
+	if err:=tx.Table("user").Select("id,balance,user_name").Where("id=?",userId).First(&user).Error;err!=nil{
+		tx.Callback()
+		return 0,err
+	}
+	//将结构体转为json
+	userInfo := make(map[string]string)
+	userInfo["user_name"] = user.UserName
+	var uab UserAccountBill
+	uab.OldBalance = user.Balance
+	uab.AccountName = u.AccountName
+	uab.UserId = u.UserId
+	uab.Money = u.Money
+	uab.BillNo = utils.CreateOrderNo(u.UserId)
+
+	//user_id, type, sett_amt, about, " + "balance, old_balance, order_sn, code, code_sn, create_time, update_time) values(?,?,?,?,?,?,?,?,?,?,?)"
+	var ub UserBill
+	ub.UserId = u.UserId
+	ub.SettAmt = u.Money
+	ub.OldBalance = user.Balance
+	ub.OrderSn = utils.CreateOrderNo(u.UserId)
+	ub.About = u.AccountName
+	ub.Code = 300
+	ub.CodeSn = uab.BillNo
+	//转出账户是中心账户
+	if from == 0{
+		if user.Balance < amount{//余额不足
+			tx.Callback()
+			return 101,nil
+		}
+		//先减中心账户余额,再调用第三方接口
+		if err:=tx.Table("user").Where("id=?",userId).UpdateColumn("balance",gorm.Expr("balance-?"),amount).Error;err!=nil{
+			logrus.Error(err)
+			tx.Callback()
+			return 0,err
+		}
+		//调用第三方接口
+		ok := service.GameTrans("0", u.AccountName, amount, userInfo)
+		if !ok{//第三方接口调用失败
+			tx.Callback()
+			return 500,nil
+		}
+		uab.NewBalance = user.Balance-amount
+		ub.Balance = user.Balance-amount
+	}else{
+		//调用第三方接口
+		ok := service.GameTrans(u.AccountName, "0", amount, userInfo)
+		if !ok {
+			tx.Rollback()
+			return 500,nil
+		}
+		//加中心账户余额
+		if err:=tx.Table("user").Where("id=?",userId).UpdateColumn("balance",gorm.Expr("balance+?"),amount).Error;err!=nil{
+			logrus.Error(err)
+			tx.Callback()
+			return 0,err
+		}
+		uab.NewBalance = user.Balance+amount
+		ub.Balance = user.Balance+amount
+	}
+	timestamp := time.Now().Unix()
+	uab.CreateTime = timestamp
+	uab.UpdateTime = timestamp
+	//增加转账记录
+	if err:= tx.Create(&uab).Error; err!=nil{
+		logrus.Error(err)
+		tx.Callback()
+		return 0,err
+	}
+	//增加交易明细
+	if err:= tx.Create(&ub).Error;err!=nil{
+		logrus.Error(err)
+		tx.Callback()
+		return 0,err
+	}
+	tx.Commit()
+	return 200,nil
+}

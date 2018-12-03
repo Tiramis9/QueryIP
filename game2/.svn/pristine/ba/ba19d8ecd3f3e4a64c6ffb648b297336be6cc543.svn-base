@@ -1,0 +1,12 @@
+package game
+
+type Server struct {
+	//服务器协议，http/https
+	ServerSchema string
+
+	//服务器地址，api.ky34.com
+	ServerAddress string
+}
+
+type Game interface {
+}

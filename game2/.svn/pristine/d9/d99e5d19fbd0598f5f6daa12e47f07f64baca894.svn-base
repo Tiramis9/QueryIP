@@ -1,0 +1,170 @@
+package model
+
+import (
+	"github.com/jinzhu/gorm"
+	"github.com/sirupsen/logrus"
+)
+
+type User struct {
+	Id            int     `json:"id"`
+	MerchantId    int     `json:"merchant_id"`
+	UserName      string  `json:"user_name"`
+	Password      string  `json:"password,omitempty"`
+	Salt          string  `json:"salt,omitempty"`
+	TrueName      string  `json:"true_name"`
+	Phone         string  `json:"phone"`
+	Email         string  `json:"email,omitempty"`
+	QQ            string  `json:"qq,omitempty"`
+	Birthday      string  `json:"birthday,omitempty"`
+	LoginTime     int64   `json:"login_time,omitempty"`
+	LoginIp       string  `json:"login_ip,omitempty"`
+	LastLoginIp   string  `json:"last_login_ip,omitempty"`
+	LastLoginTime int64   `json:"last_login_time"`
+	Balance       float64 `json:"balance"`
+	Skype         string  `json:"skype,omitempty"`
+	Device        int     `json:"device,omitempty"`
+	Source        string  `json:"source,omitempty"`
+	ClassId       int     `json:"class_id,omitempty"`
+	GroupId       int     `json:"group_id,omitempty"`
+	TimeZone      int     `json:"time_zone,omitempty"`
+	Lang          string  `json:"lang,omitempty"`
+	AreaCode      int     `json:"area_code,omitempty"`
+	RegTime       int64   `json:"reg_time"`
+	RegIp         string  `json:"reg_ip"`
+	AgentCode     string  `json:"agent_code"`
+	ParentId      int     `json:"parent_id"`
+	PayPass       string  `json:"pay_pass"`
+}
+
+type UserBank struct {
+	Id       int    `json:"id"`
+	UserId   int    `json:"user_id,omitempty"`
+	TrueName string `json:"true_name,omitempty"`
+	Phone    int64  `json:"phone,omitempty"`
+	CardNo   string `json:"card_no,omitempty"`
+	BankName string `json:"bank_name,omitempty"`
+	IdCard   string `json:"id_card,omitempty"`
+	Status   int    `json:"status,omitempty"`
+}
+
+type SysSecurityQuestion struct {
+	Id       int    `json:"id"`
+	Question string `json:"question"`
+	Type     int    `json:"type"`
+	Lang     int    `json:"lang"`
+}
+
+type UserInterface interface {
+	GetUserById()
+	GetUserByName()
+}
+
+func GetUserById(db *gorm.DB, id int) (*User, error) {
+	var u User
+	if err := db.Table("user").Select("id,merchant_id,user_name,true_name,phone,email,qq,birthday,balance,last_login_time,last_login_ip,password,salt").
+		Where("id=?", id).Find(&u).Error; err != nil {
+		if err == gorm.ErrRecordNotFound {
+			return nil, nil
+		}
+		logrus.Error(err)
+		return nil, err
+	}
+	return &u, nil
+}
+
+func GetUserByPhone(db *gorm.DB, phone string, areaCode int) (*User, error) {
+	var u User
+	if err := db.Table("user").Select("id,merchant_id,user_name,true_name,phone,email,qq,birthday,balance,last_login_time,last_login_ip,password,salt").
+		Where("phone=? AND area_code=?", phone, areaCode).Find(&u).Error; err != nil {
+		if err == gorm.ErrRecordNotFound {
+			return nil, nil
+		}
+		logrus.Error(err)
+		return nil, err
+	}
+	return &u, nil
+}
+
+func GetUserByName(db *gorm.DB, name string) (*User, error) {
+	var m User
+	if err := db.Table("user").Select("id,merchant_id,user_name,password,salt,login_time,login_ip,"+
+		"last_login_ip,last_login_time,true_name,phone,email,qq,skype,lang,time_zone,birthday,area_code,"+
+		"device,source,class_id,group_id").Where("user_name=?", name).Or("phone=?", name).Find(&m).Error; err != nil {
+		if err == gorm.ErrRecordNotFound {
+			return nil, nil
+		}
+		logrus.Error(err)
+		return nil, err
+	}
+	return &m, nil
+}
+
+func (u *User) InsterUser(db *gorm.DB) (int, error) {
+	if err := db.Create(&u).Error; err != nil {
+		logrus.Error(err)
+		return 0, err
+	}
+	return u.Id, nil
+}
+
+//修改用户单个字段值
+func UpdateUser(db *gorm.DB, userId int, fields map[string]interface{}) (bool, error) {
+	if err := db.Table("user").Where("id=?", userId).Update(fields).Error; err != nil {
+		logrus.Error(err)
+		return false, err
+	}
+	return true, nil
+}
+
+//修改用户登录ip,登录时间
+func UpdateUserLoginInfo(db *gorm.DB, userId int, loginTime int64, loginIp string, lastLoginTime int64, lastLoginIp string) (bool, error) {
+	m := make(map[string]interface{})
+	m["login_time"] = loginTime
+	m["login_ip"] = loginIp
+	m["last_login_time"] = lastLoginTime
+	m["last_login_ip"] = lastLoginIp
+	if err := db.Table("user").Where("id=?", userId).Update(m).Error; err != nil {
+		logrus.Error(err)
+		return false, err
+	}
+	return true, nil
+}
+
+//获取用户银行列表
+func GetUserBankList(db *gorm.DB, userId int) ([]UserBank, error) {
+	var bankList []UserBank
+	if err := db.Table("user_bank").Where("user_id=?", userId).Find(&bankList).Error; err != nil {
+		if err == gorm.ErrRecordNotFound {
+			return nil, nil
+		}
+		logrus.Error(err)
+		return nil, err
+	}
+	return bankList, nil
+}
+
+//获取单个用户银行信息
+func GetUserBankInfo(db *gorm.DB, id int, userId int) (*UserBank, error) {
+	var u UserBank
+	if err := db.Table("user_bank").Select("id,bank_name,card_no,user_id").Where("id=? AND user_id=?", id, userId).Find(&u).Error; err != nil {
+		if err == gorm.ErrRecordNotFound {
+			return nil, nil
+		}
+		logrus.Error(err)
+		return nil, err
+	}
+	return &u, nil
+}
+
+//获取安全密保问题
+func GetSecurity(db *gorm.DB, qType int, lang int) ([]SysSecurityQuestion, error) {
+	var securityList []SysSecurityQuestion
+	if err := db.Table("sys_security_question").Select("id,question,type,lang").Where("type=? AND lang=?", qType, lang).Find(&securityList).Error; err != nil {
+		if err == gorm.ErrRecordNotFound {
+			return nil, nil
+		}
+		logrus.Error(err)
+		return nil, err
+	}
+	return securityList, nil
+}

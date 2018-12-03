@@ -1,0 +1,26 @@
+package ky
+
+import (
+	"testing"
+	"time"
+)
+
+func TestGameKYLogin(t *testing.T) {
+	now := time.Now().UnixNano() / 1e6
+	account := "test"
+
+	game := NewGameKY()
+	req := AccountLoginReq{
+		BaseReq: BaseReq{
+			Agent:     GameAgent,
+			TimeStamp: now,
+		},
+		Account:  account,
+		Money:    0,
+		OrderId:  generateOrderId(GameAgent, now, account),
+		Ip:       "127.0.0.1",
+		LineCode: "sub1",
+		KindId:   "0",
+	}
+	game.Login(req)
+}

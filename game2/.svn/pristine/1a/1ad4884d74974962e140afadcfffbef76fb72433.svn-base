@@ -1,0 +1,62 @@
+package og
+
+import (
+	"fmt"
+	"net/url"
+	"testing"
+)
+
+func TestSomething(t *testing.T) {
+	value := url.Values{}
+	value.Add("user_name", "name")
+	value.Add("pwd", "xx")
+	t.Log(value.Encode())
+	// game-providers/1/balance?username=myuser123
+
+	fmt.Sprintf("/game-providers/%v/%v", 1, 10)
+}
+
+// test Transaction
+func TestTransactionsInfoTenMin(t *testing.T) {
+
+	const (
+		TEST_OPERATOR_KEY    = "D4NDSJujqQwkZvQaadBj"
+		ALLBET_OPERATOR_NAME = "mog074jk "
+		ALLBET_API_URL       = "http://mucho.oriental-game.com:8057"
+	)
+	data := map[string]string{}
+	//var tan TransferActent
+	data["sDate"] = "2018-10-29 17:30:00"
+	data["eDate"] = "2018-10-29 17:35:00"
+	data["operator"] = ALLBET_OPERATOR_NAME
+	data["key"] = TEST_OPERATOR_KEY
+	/*************测试注单*******************************************/
+	msg := do_request("Transaction", data)
+	t.Log("reposend:", msg)
+
+}
+
+// test game-providers
+func TestGet_GameBalance(t *testing.T) {
+	const (
+		TEST_OPERATOR_KEY    = "D4NDSJujqQwkZvQaadBj"
+		ALLBET_OPERATOR_NAME = "mog074jk "
+		ALLBET_API_URL       = "http://mucho.oriental-game.com:8057"
+	)
+	data := map[string]interface{}{}
+	data["providerId"] = 2
+	data["username"] = "user123"
+	map_res := do_requestGet("/game-providers", data)
+	/*************测试余额*******************************************/
+	t.Log("reposend:", map_res)
+
+}
+
+func Test_Register(t *testing.T) {
+	data := map[string]string{}
+	map_res, err := Register_request("/token", data)
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Log(map_res)
+}

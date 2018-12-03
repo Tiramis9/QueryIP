@@ -1,0 +1,61 @@
+package service
+
+import (
+	//"encoding/json"
+	//"fmt"
+	//"reflect"
+	"game2/api/allbet"
+	"game2/lib/utils"
+	"strconv"
+
+	"github.com/gin-gonic/gin"
+)
+
+func GameLogin(c *gin.Context, game_code string, user_info map[string]string) {
+	//游戏代码,判断
+	switch game_code {
+	case "Allbet_a":
+		allbet.Forward_game(c, user_info)
+	case "Allbet_e":
+		allbet.Forward_egame(c, user_info)
+	default:
+		allbet.Forward_game(c, user_info)
+	}
+}
+
+func GameGetBalance(game_name string, user_info map[string]string) (interface{}, bool) {
+	res := map[string]interface{}{}
+	//游戏代码,判断
+	switch game_name {
+	case "Allbet":
+		res = allbet.Get_balance(user_info)
+	default:
+		res = allbet.Get_balance(user_info)
+	}
+	if res["code"] == 0 { //失败
+		return 0, false
+	}
+	//data_info = res["data"]["balance"]
+	balance_map := res["data"].(map[string]interface{})
+	return balance_map["balance"], true
+}
+
+func GameTrans(from string, to string, amount float64, user_info map[string]string) bool {
+	info := map[string]string{}
+	if from == utils.GAME_AB || to == utils.GAME_AB {
+		info["user_name"] = user_info["user_name"]
+		info["operFlag"] = "0" //提取
+		if from == "0" {
+			info["operFlag"] = "1" //存储
+		}
+		info["amount"] = strconv.FormatFloat(amount, 'e', -1, 64)
+		res := allbet.Agent_client_transfer(info)
+		if res["code"] == 1 { //成功
+			return true
+		} else {
+			utils.Log(res["msg"], "debug", "")
+			return false
+		}
+	}
+	return false
+}

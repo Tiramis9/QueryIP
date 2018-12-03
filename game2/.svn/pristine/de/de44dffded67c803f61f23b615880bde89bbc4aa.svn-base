@@ -1,0 +1,68 @@
+package action
+
+import (
+	"fmt"
+	"game2/global/status"
+	"game2/lib/redisclient"
+	"game2/lib/utils"
+	"game2/model"
+	"strings"
+
+	"github.com/gin-gonic/gin"
+)
+
+type WebsiteInfoReq struct {
+	Domain string `json:"domain" binding:"required"`
+}
+
+//跟据站点的域名查看appid
+func Websiteinfo(c *gin.Context) {
+	var w WebsiteInfoReq
+	if err := c.BindJSON(&w); err != nil {
+		utils.Debug(err)
+		RespParamErr(c)
+		return
+	}
+	//php接口方地址
+	ip := c.ClientIP()
+	//获取列表
+	data, err := model.GetDomainInitInfo(model.Db, w.Domain)
+	if err != nil {
+		RespServerErr(c)
+		return
+	}
+	if data.Appid != "" {
+		//判断ip是否在白名单中
+		flag := strings.Contains(data.Ip_white, ip)
+		if flag == false {
+			utils.Debug("ip banned")
+			RespUnauthorized(c)
+			return
+		}
+		input := utils.ToJson(data)
+		//将网站信息与appid,secret存入redis
+		conn := redisclient.Get()
+		defer conn.Close()
+		exTime := 3600
+		_, err := conn.Do("SET", "info_"+w.Domain, input, "EX", exTime)
+		if err != nil {
+			utils.Debug("redis set error")
+			RespServerErr(c)
+			return
+		}
+		appidInfo := make(map[string]interface{})
+		appidInfo["merchant_id"] = data.Id
+		appidInfo["secret"] = data.Secret
+		jsonInfo := utils.ToJson(appidInfo)
+		_, err2 := conn.Do("SET", "appid_"+data.Appid, jsonInfo, "EX", exTime)
+		fmt.Println(jsonInfo)
+		if err2 != nil {
+			utils.Debug("redis set error")
+			RespServerErr(c)
+			return
+		}
+		RespJson(c, status.OK, data)
+		return
+	}
+	RespParamErr(c)
+}

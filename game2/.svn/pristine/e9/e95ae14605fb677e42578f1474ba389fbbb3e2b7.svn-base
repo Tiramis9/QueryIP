@@ -1,0 +1,65 @@
+package action
+
+import (
+	"fmt"
+	"game2/model"
+	"net/http"
+	"strconv"
+
+	"github.com/gin-gonic/gin"
+)
+
+func PayTypetList(c *gin.Context) {
+	var data []interface{}
+	ch := make(chan int)
+	merchant_id := 1
+	pay_type_model := model.PayType{Merchant_id: merchant_id}
+	paytypelist := pay_type_model.GetPayTypeList(merchant_id)
+	fmt.Println(paytypelist)
+	for _, v := range paytypelist {
+		payty_model := model.PayType{Merchant_id: merchant_id, Pay_type: v.Pay_type}
+		go func(ty string) {
+			res := payty_model.GetPayConfig()
+			arr := map[string]interface{}{}
+			arr["list"] = res
+			arr["name"] = ty
+			data = append(data, arr)
+			ch <- 1
+		}(v.Pay_type)
+	}
+	//等待通道数结束
+	for i := 0; i < len(paytypelist); i++ {
+		<-ch
+	}
+	res := gin.H{"code": 1, "data": data, "msg": "ok"}
+	c.JSON(http.StatusOK, res)
+}
+
+func Recharge(c *gin.Context) {
+	id_str := c.PostForm("id")
+	id, err := strconv.Atoi(id_str)
+	if err != nil {
+		fmt.Println(err)
+		res := gin.H{"code": 0, "data": nil, "msg": "fail"}
+		c.JSON(http.StatusOK, res)
+		return
+	}
+	fmt.Println(id)
+	//根据id查出支付通道
+	/*merchant_id := 1
+	pay_type_model := model.PayType{Id: id, Merchant_id: merchant_id}
+	data := pay_type_model.GetPayInfo()
+	res := gin.H{"code": 1, "data": nil, "msg": "ok"}
+	if data.Id != 0 {
+		res["data"] = data
+	}
+	fmt.Println(res)
+	c.JSON(http.StatusOK, res)*/
+	suc := gin.H{"code": "1", "msg": "ok"}
+	pay_tag := c.PostForm("pay_tag")
+	if pay_tag == "1" {
+		suc["pay_tag"] = pay_tag
+		suc["redirect"] = "www.baidu.com"
+	}
+	c.JSON(http.StatusOK, suc)
+}

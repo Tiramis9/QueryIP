@@ -1,0 +1,70 @@
+package ky
+
+import (
+	"fmt"
+	"game2/lib/game"
+	"time"
+)
+
+// 开元棋牌
+type GameKY struct {
+	game.Server
+
+	Agent  string
+	DesKey string
+	Md5Key string
+}
+
+type BaseReq struct {
+	Agent     string
+	TimeStamp int64 //毫秒
+	Param     string
+	Key       string
+}
+
+const (
+	GameAgent = "62127"
+	DESKey    = "1457C7D93CDBC19D"
+	MD5Key    = "5417AC8DE1ED2800"
+
+	channelHandleUrl   = "https://kyapi.ky206.com:189/channelHandle"
+	getRecordHandleUrl = "https://kyrecord.ky206.com:190/getRecordHandle"
+
+	OperationTypeLogin           = 0 //登录
+	OperationTypeQuerySubScore   = 1 //查询可下分
+	OperationTypeAddScore        = 2 //上分
+	OperationTypeSubScore        = 3 //下分
+	OperationTypeQueryOrder      = 4 //查询订单
+	OperationTypeQueryIsOnline   = 5 //是否在线
+	OperationTypeGetOrderRecord  = 6 //查询游戏注单
+	OperationTypeGetTotalScore   = 7 //查询玩家总分
+	OperationTypeKickUserOffline = 8 //踢玩家下线
+)
+
+func generateOrderId(agent string, us int64, account string) string {
+	timeStr := fmt.Sprintf("%v", us)
+	date := time.Unix(us/1e3, 0).Format("20060102150405")
+	return fmt.Sprintf("%v%v%v%v", agent, date, timeStr[len(timeStr)-3:], account)
+}
+
+func generateMd5Str(agent string, timestamp int64, md5Key string) string {
+	return fmt.Sprintf("%v%v%v", agent, timestamp, md5Key)
+}
+
+func baseReq2Map(b BaseReq) map[string]interface{} {
+	m := make(map[string]interface{})
+	m["agent"] = b.Agent
+	m["timestamp"] = b.TimeStamp
+	m["param"] = b.Param
+	m["key"] = b.Key
+
+	return m
+}
+
+func NewGameKY() *GameKY {
+	return &GameKY{
+		Agent:  GameAgent,
+		DesKey: DESKey,
+		Md5Key: MD5Key,
+	}
+}

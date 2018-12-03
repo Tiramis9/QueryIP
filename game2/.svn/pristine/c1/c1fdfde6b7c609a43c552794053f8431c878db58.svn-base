@@ -1,0 +1,279 @@
+package og
+
+import (
+	"encoding/json"
+	"errors"
+	"fmt"
+	"io/ioutil"
+	"math/rand"
+	"net/http"
+	"strconv"
+
+	"github.com/gin-gonic/gin"
+)
+
+const (
+	TEST_OPERATOR_KEY    = "D4NDSJujqQwkZvQaadBj"
+	ALLBET_OPERATOR_NAME = "mog074jk"
+	ALLBET_API_URL       = "http://mucho.oriental-game.com:8057/"
+
+	BLANCE_API_URL = "http://api01.oriental-game.com:8085"
+	/************************************************************/
+	ALLBET_AGENT_NAME  = "Name"
+	ALLBET_DES_KEY     = "f0Q2638+aVam6t0+YXaAtwamFNXPME5V"
+	ALLBET_MD5_KEY     = "pRyd5cngzAja4LMdzUeELeX2yqIs/V1DwHPwNuobAug="
+	ALLBET_PROPERTY_ID = "2143220"
+	PPP_API_URL        = "https://www.apidemo.net:8443/ams/"
+	USER_PASSWORD      = "123456"
+	USER_PREFIX        = "jkg_"
+	LOGIN_RETURN_URL   = "http://api.jkgsoft.com/game/allbet"
+)
+
+var error_code map[string]string = map[string]string{"OK": "ok", "INTERNAL_ERROR": "internet error",
+	"ILLEGAL_ARGUMENT": "illegal argument", "SYSTEM_MATAINING": "system mataining",
+	"AGENT_NOT_EXIST": "agent not exist", "CLIENT_EXIST": "client exist", "CLIENT_PASSWORD_INCORRECT": "client password incorrect",
+	"TOO_FREQUENT_REQUEST": "too frequent request", "CLIENT_NOT_EXIST": "client not exist", "TRANS_EXISTED": "trans existed",
+	"LACK_OF_MONEY": "lack of money", "DUPLICATE_CONFIRM": "duplicate confirm", "TRANS_NOT_EXIST": "trans not exist",
+	"DECRYPTION_FAILURE": "decryption failure", "FORBIDDEN": "forbidden", "INCONSISTENT_WITH_PRE_TRANS": "inconsistent with pre tans",
+	"INVALID_PROPERTYID": "invalid propertyid", "INVALID_SIGN": "invalid sign", "TRANS_FAILURE": "trans failure"}
+
+var lang_map map[string]string = map[string]string{"cn": "zh_CN"}
+
+type (
+	// OG注单
+	TransferActent struct {
+		/*************以下是必选参数*************/
+		SDate    string `json:"sDate"`
+		EDate    string `json:"eDate"`
+		Operator string `json:"operator"`
+		key      string `json:"key"`
+		/*************以下是可选参数*************/
+		Provider          string `json:"provider"`
+		PlayerID          string `json:"playerid"`
+		TransactionNumber string `json:"transactionNumber"`
+		Exact             bool   `json:"exact"`
+	}
+	// 用户注册
+	Register struct {
+		UserName  string
+		Country   string
+		FullName  string
+		Email     string
+		Language  string
+		Birthdate int64
+	}
+)
+
+//用户投注记录(10分钟内) //已调通
+func (a *GameOG) GetTransactionsInfoTenMin(msg *TransferActent) {
+	/*
+			data["sDate"] = a.SDate
+			data["eDate"] = a.EDate
+			data["operator"] = a.Operator
+			data["key"] = a.key
+
+		operator := c.PostForm("operator")
+		sDate := c.PostForm("sDate")
+		eDate := c.PostForm("eDate")
+		key := c.PostForm("key")
+	*/
+	data := map[string]string{}
+	data["sDate"] = msg.SDate
+	data["eDate"] = msg.EDate
+	data["operator"] = msg.Operator
+	data["key"] = msg.key
+
+	fmt.Println("requst:", data)
+	str := do_request("/Transaction", data)
+	fmt.Println("84:", str)
+}
+
+//获取余额
+func (a *GameOG) Get_GameBalance(info map[string]string) map[string]interface{} {
+	res := gin.H{"code": 0, "data": nil, "msg": "fail"}
+	random_str := strconv.Itoa(rand.Intn(1000))
+	data := map[string]interface{}{}
+	data["reamdom"] = random_str
+	data["providerId"] = 1
+	data["username"] = "user123"
+	map_res := do_requestGet("/game-providers", data)
+	if map_res["error_code"] != "OK" {
+		res["msg"] = map_res["error_code"]
+	} else {
+		res["code"] = 1
+		data_info := map[string]interface{}{}
+		data_info["balance"] = map_res["balance"]
+		res["data"] = data_info
+		res["msg"] = "ok"
+	}
+	return res
+}
+
+//注册 register
+func (a *GameOG) Register(info *Register) map[string]interface{} {
+	res := gin.H{"code": 0, "data": nil, "msg": "fail"}
+	data := map[string]interface{}{}
+	data["username"] = info.UserName
+	data["country"] = info.Country
+	data["email"] = info.Email
+	data["fullname"] = info.FullName
+	data["birthdate"] = info.Birthdate
+
+	map_res := do_requestGet("/register", data)
+	if map_res["error_code"] != "OK" {
+		res["msg"] = map_res["error_code"]
+	} else {
+		res["code"] = 1
+		data_info := map[string]interface{}{}
+		data_info["balance"] = map_res["balance"]
+		res["data"] = data_info
+		res["msg"] = "ok"
+	}
+	return res
+}
+
+// 注单POST请求
+func do_request(api_url string, data map[string]string) map[string]interface{} {
+	str := HttpPost(ALLBET_API_URL+api_url, data)
+	//fmt.Println("respond 140:", str)
+	msg := make(map[string]interface{}) //this code not got it
+	json.Unmarshal([]byte(str), &msg)   // this code not got it
+	return msg
+}
+
+// RegisterHandle请求
+func Register_request(api_url string, params map[string]string) (map[string]interface{}, error) {
+	client := &http.Client{}
+	/*
+		tr := &http.Transport{
+			ProxyConnectHeader: http.Header{
+				data
+			},
+		}
+		client := &http.Client{Transport: tr}
+	*/
+	fmt.Println("156 :", BLANCE_API_URL+api_url)
+	resp, err := http.NewRequest("GET", BLANCE_API_URL+api_url, nil) // client.Get(BLANCE_API_URL + api_url)
+	for key, value := range params {
+		fmt.Println(key, value)
+		//resp.Header.Set(key, value)
+	}
+
+	resp.Header.Add("X-Operator", ALLBET_OPERATOR_NAME)
+	resp.Header.Add("X-Key", TEST_OPERATOR_KEY)
+
+	if err != nil {
+		fmt.Println("164:", err)
+		return nil, err
+	}
+	//处理返回结果
+	response, _ := client.Do(resp)
+
+	defer response.Body.Close()
+
+	str, err := ioutil.ReadAll(response.Body)
+	if err != nil {
+		fmt.Println(err)
+		return nil, err
+	}
+	fmt.Println("171 Do:", response)
+	fmt.Printf("173 body: %s", string(str))
+	//str := HandleDeal(BLANCE_API_URL+api_url, data)
+	//fmt.Println("respond 140:", str)
+	msg := make(map[string]interface{}) //this code not got it
+	//json.Unmarshal([]byte(str), &msg)   // this code not got it
+	return msg, nil
+}
+
+func NewGameOG() *GameOG {
+	game := GameOG{
+		User: ALLBET_OPERATOR_NAME,
+		Key:  TEST_OPERATOR_KEY,
+	}
+	data := map[string]string{}
+	data["operator"] = ALLBET_OPERATOR_NAME
+	data["key"] = TEST_OPERATOR_KEY
+	map_res, _ := Register_request("/token", data)
+	fmt.Println("150:", map_res)
+	return &game
+}
+
+// 查询余额GET请求
+func do_requestGet(api_url string, params map[string]interface{}) map[string]interface{} {
+	var providerId int
+	var username string
+	for key, value := range params {
+		if key == "providerId" {
+			value, ok := value.(int)
+			if ok {
+				providerId = value
+			}
+		}
+		if key == "username" {
+			value, ok := value.(string)
+			if ok {
+				username = value
+			}
+		}
+	}
+	url := fmt.Sprintf("%v%v/%v/balance?username=%v", BLANCE_API_URL, api_url, providerId, username)
+	str := HttpGet(url)
+	//fmt.Println("respond 140:", str)
+	msg := make(map[string]interface{}) //this code not got it
+	json.Unmarshal([]byte(str), &msg)   // this code not got it
+	return msg
+}
+
+func CheckTransactionsParam(req *TransferActent) (map[string]interface{}, error) {
+	data := make(map[string]interface{})
+	if req.Operator != ALLBET_OPERATOR_NAME {
+		return nil, errors.New("Operator param error")
+	}
+	begintime, err := strconv.Atoi(req.SDate)
+	if err != nil {
+		return nil, errors.New("time strint to int invaild")
+	}
+	endtime, err := strconv.Atoi(req.EDate)
+	if err != nil {
+		return nil, errors.New("time strint to int invaild")
+	}
+	if begintime != 0 {
+		if endtime != 0 {
+			if endtime < begintime && (endtime-begintime) > 10 && (endtime-begintime) < 1 {
+				return nil, errors.New("time error,Time should not be less than 1 minute or more than 10 minutes")
+			}
+		}
+	}
+	data["operator"] = req.Operator
+	data["sDate"] = req.SDate
+	data["eDate"] = req.EDate
+	data["key"] = req.key
+	return data, nil
+}
+func createtTransactionsInfo(api_url string, date map[string]interface{}) map[string]interface{} {
+
+	res := gin.H{"code": 0, "data": nil, "msg": "fail"}
+	random_str := strconv.Itoa(rand.Intn(1000))
+	data := map[string]string{}
+	data["operator"] = ALLBET_OPERATOR_NAME
+	data["random"] = random_str
+	data["sDate"] = "2018-11-19 08:27:16"
+	data["eDate"] = "2018-11-19 08:35:16"
+	/*
+		data["client"] = USER_PREFIX + info["user_name"]
+		data["nickName"] = USER_PREFIX + info["user_name"]
+		data["password"] = USER_PASSWORD
+		data["vipHandicaps"] = "12"
+		data["orHandicaps"] = "1"
+		data["orHallRebate"] = "0"
+	*/
+	map_res := do_request("/Transaction", data)
+	if map_res["error_code"] != "OK" {
+		res["msg"] = map_res["error_code"]
+	} else {
+		res["code"] = 1
+		res["msg"] = "ok"
+	}
+	return res
+
+}

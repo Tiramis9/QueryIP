@@ -1,0 +1,24 @@
+package dg
+
+const (
+	GameDGPlatform  = "24科技"
+	GameDGCoinType  = "CNY/MYR/THB/TWD/KRW2/VND2/IDR2"
+	GameDGHostHttp  = "http://api.dg99web.com"
+	GameDGHostHttps = "https://api.dg99web.com"
+	GameDGAgent     = "DGTE0101AE"
+	GameDGPwd       = "abc123"
+	GameDGKey       = "965de88b1bb745fa969cb09946612d86"
+	GameDGAppSufix  = "HJK"
+
+	RegisterUrl             = "/user/signup/%v/"
+	LoginUrl                = "/user/login/%v/"
+	TryPlayLoginUrl         = "/user/free/%v/"
+	UpdateUserInfoUrl       = "/user/update/%v"
+	GetUserBalanceUrl       = "/user/getBalance/%v"
+	UserTransferUrl         = "/account/transfer/%v"
+	IsDepositSuccessUrl     = "/account/checkTransfer/%v"
+	UpdateUserLimitGroupUrl = "/game/updateLimit/%v"
+	GetGameRecordUrl        = "/game/getReport/%v"
+	TagGameRecordUrl        = "/game/markReport/%v"
+	GetAgentUserListInfoUrl = "/user/onlineReport/%v"
+)
