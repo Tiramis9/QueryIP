@@ -1,0 +1,44 @@
+package model
+
+import "github.com/jinzhu/gorm"
+
+//IP黑名单
+type RestrictAccess struct {
+	IP         string `json:"ip"`
+	Area       string `json:"area"`
+	Status     int    `json:"status"`
+	MerchantId int    `json:"-"`
+}
+
+func ListBlockedSource(db *gorm.DB, mid int, page, pageCount int) ([]RestrictAccess, int, error) {
+	var count int
+	if err := db.Table("black_ip_list").Where("merchant_id = ?", mid).Count(&count).Error; err != nil {
+		return nil, 0, err
+	}
+
+	var b []RestrictAccess
+	if err := db.Table("black_ip_list").Where("merchant_id = ?", mid).Offset((page - 1) * pageCount).Limit(pageCount).Find(&b).Error; err != nil {
+		if err == gorm.ErrRecordNotFound {
+			return nil, 0, nil
+		}
+		return nil, 0, err
+	}
+	return b, count, nil
+}
+
+//添加或解除 ip黑名单
+func IPaddrOperate(db *gorm.DB, mid int, ip string, action string) error {
+	if action == "block" {
+		return db.Table("black_ip_list").Create(RestrictAccess{IP: ip, Status: 2, MerchantId: mid}).Error
+	}
+	return db.Where("merchant_id = ? AND ip = ?", mid, ip).Delete(RestrictAccess{}).Error
+}
+
+//添加访问来源地区黑名单
+func SourceAreaOperate(db *gorm.DB, mid int, area, action string) error {
+	if action == "block" {
+		return db.Table("black_ip_list").Create(RestrictAccess{Area: area, Status: 2, MerchantId: mid}).Error
+	}
+
+	return db.Where("merchant_id = ? AND area = ? ", mid, area).Delete(RestrictAccess{}).Error
+}

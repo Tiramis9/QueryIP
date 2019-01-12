@@ -1,0 +1,275 @@
+package action
+
+import (
+	"fmt"
+	"github.com/gin-gonic/gin"
+	"golang_game_merchant/global/status"
+	"golang_game_merchant/lib/utils"
+	"golang_game_merchant/model"
+	"time"
+)
+
+type AgentListReq struct {
+	UserName  string `json:"user_name"`
+	Page      int    `json:"page"`
+	PageCount int    `json:"page_count"`
+	AType     int    `json:"a_type"`
+	Status    int    `json:"status"`
+}
+
+type AgentReq struct {
+	Id          int    `json:"id" binding:"required"`
+	TrueName    string `json:"true_name"`
+	Phone       string `json:"phone"`
+	Skype       string `json:"skype"`
+	Email       string `json:"email"`
+	Qq          string `json:"qq"`
+	Password    string `json:"password"`
+	UserClassId int    `json:"user_class_id"`
+	Status      int    `json:"status"`
+}
+
+type AgentResp struct {
+	Id            int    `json:"id"`
+	MerchantId    int    `json:"merchant_id"`
+	UserName      string `json:"user_name"`
+	TrueName      string `json:"true_name"`
+	Phone         string `json:"phone"`
+	Skype         string `json:"skype"`
+	Email         string `json:"email"`
+	Qq            string `json:"qq"`
+	Status        int    `json:"status"`
+	RegIp         string `json:"reg_ip"`
+	LastLoginTime int64  `json:"last_login_time"`
+	LastLoginIp   string `json:"last_login_ip"`
+	LoginIp       string `json:"login_ip"`
+	UserCount int    `json:"user_count"`
+	ClassName string `json:"class_name"`
+}
+
+/*
+获取代理列表
+*/
+func AgentList(c *gin.Context) {
+	//获取商户id
+	var data model.AgentList
+	var alReq AgentListReq
+	/*var merchId interface{}
+	var ok bool
+	/*if merchId,ok = c.Get("merchant_id");ok==false{
+		RespUnauthorized(c)
+	}
+	merchantId := merchId.(int)*/
+	if err:=c.BindJSON(&alReq);err!=nil{
+		RespParamErr(c)
+		return
+	}
+	merchantId := 1
+	page, pageCount := InitPage(alReq.Page, alReq.PageCount)
+	//获取列表
+	where := map[string]interface{}{"user_name": alReq.UserName, "status": alReq.Status}
+	list, err := model.GetAgentList(model.Db, merchantId, 1, where, page, pageCount)
+	if err != nil {
+		RespServerErr(c)
+		return
+	}
+	data.List = list
+	//获取总数
+	total, err := model.GetAgentCount(model.Db, merchantId, 1, where)
+	if err != nil {
+		RespServerErr(c)
+		return
+	}
+	data.Total = total
+	RespJson(c, status.OK, data)
+}
+
+/**
+代理详情
+*/
+func AgentInfo(c *gin.Context) {
+	var agReq AgentReq
+	var agResp AgentResp
+	if err:=c.BindJSON(&agReq);err!=nil{
+		RespParamErr(c)
+		return
+	}
+	merchantId := 1
+	//agentId := 1
+	//获取列表
+	agentInfo, err := model.GetAgentInfo(model.Db, agReq.Id, merchantId)
+	agResp.UserName = agentInfo.Agent.UserName
+	agResp.Id = agentInfo.Agent.Id
+	agResp.Status = agentInfo.Agent.Status
+	agResp.MerchantId = agentInfo.Agent.MerchantId
+	agResp.Skype = agentInfo.Agent.Skype
+	agResp.Qq = agentInfo.Agent.Qq
+	agResp.Email = agentInfo.Agent.Email
+	agResp.Phone = agentInfo.Agent.Phone
+	agResp.TrueName = agentInfo.Agent.TrueName
+	agResp.LastLoginIp = agentInfo.Agent.LastLoginIp
+	agResp.LastLoginTime = agentInfo.Agent.LastLoginTime
+	agResp.RegIp = agentInfo.Agent.RegIp
+	agResp.LoginIp = agentInfo.Agent.LoginIp
+	agResp.UserCount = agentInfo.UserCount
+	agResp.ClassName = agentInfo.ClassName
+	if err != nil {
+		RespServerErr(c)
+		return
+	}
+	RespJson(c, status.OK, agResp)
+}
+
+/**
+代理更改信息
+*/
+func AgentEdit(c *gin.Context) {
+	//c.Bind()
+	var agReq AgentReq
+	if err:=c.BindJSON(&agReq);err!=nil{
+		RespParamErr(c)
+		return
+	}
+	fields := make(map[string]interface{})
+	agentId := agReq.Id
+	merchantId := 1
+	if agReq.UserClassId != 0 {
+		//获取层级id
+		//判断层级是否在层级列表中
+		//ToDo
+		fields["user_class_id"] = agReq.UserClassId
+	} else {
+		fields["true_name"] = agReq.TrueName
+		fields["phone"] = agReq.Phone
+		fields["email"] = agReq.Email
+		fields["qq"] = agReq.Qq
+		fields["skype"] = agReq.Skype
+		fields["password"] = agReq.Password
+		if fields["password"] != "" {
+			//先查询代理salt
+			agent, err := model.GetAgentInfoSimple(model.Db, agentId, merchantId)
+			if err != nil {
+				RespServerErr(c)
+				return
+			}
+			fmt.Println(agent)
+			if agent.Id == 0 {
+				RespUnauthorized(c)
+				return
+			}
+			salt := utils.Md5S(agent.Salt)
+			password := utils.Md5S(utils.Md5S(salt + fields["password"].(string)))
+			fields["password"] = password
+		}
+	}
+	where := map[string]interface{}{"id": agentId, "merchant_id": merchantId}
+	err := model.UpdateAgent(model.Db, where, fields)
+	if err != nil {
+		RespServerErr(c)
+		return
+	}
+	RespSuccess(c)
+}
+
+/*
+获取代理申请列表
+*/
+func AgentApplyList(c *gin.Context) {
+	//获取商户id
+	var data model.AgentList
+	var alReq AgentListReq
+	/*var merchId interface{}
+	var ok bool
+	/*if merchId,ok = c.Get("merchant_id");ok==false{
+		RespUnauthorized(c)
+	}
+	merchantId := merchId.(int)*/
+	if err:=c.BindJSON(&alReq);err!=nil{
+		RespParamErr(c)
+		return
+	}
+	merchantId := 1
+	page, pageCount := InitPage(alReq.Page, alReq.PageCount)
+	if alReq.Status!=0{
+		if alReq.Status!=-2{
+			alReq.Status = -3
+		}
+	}
+	//获取列表
+	where := map[string]interface{}{"user_name": alReq.UserName, "status": alReq.Status}
+
+	agentList, err := model.GetAgentList(model.Db, merchantId, 0, where, page, pageCount)
+	if err != nil {
+		RespServerErr(c)
+		return
+	}
+	data.List = agentList
+	//获取总数
+	total, err := model.GetAgentCount(model.Db, merchantId, 0, where)
+	if err != nil {
+		RespServerErr(c)
+		return
+	}
+	data.Total = total
+	RespJson(c, status.OK, data)
+}
+
+/**
+代理更改信息(审核通过、不通过)
+*/
+func AgentApplyEdit(c *gin.Context) {
+	var agReq AgentReq
+	if err:=c.BindJSON(&agReq);err!=nil{
+		RespParamErr(c)
+		return
+	}
+	fields := make(map[string]interface{})
+	agentId := agReq.Id
+	merchantId := 1
+	timestamp := time.Now().Unix()
+	if agReq.Status != -2{
+		agReq.Status = 1
+	}
+	//先查询改代理是否待审核
+	info,err:=model.GetAgentInfoSimple(model.Db,agentId,merchantId)
+	if err!=nil{
+		RespServerErr(c)
+		return
+	}
+	if info.Status != -3{
+		RespUnauthorized(c)
+		return
+	}
+	fields["status"] = agReq.Status
+	fields["auditor"] = 1 //操作员id
+	fields["audit_time"] = timestamp
+	fields["update_time"] = timestamp
+	where := map[string]interface{}{"id": agentId, "merchant_id": merchantId}
+	err = model.UpdateAgent(model.Db, where, fields)
+	if err != nil {
+		RespServerErr(c)
+		return
+	}
+	RespSuccess(c)
+}
+
+/**
+代理银行列表
+ */
+ func AgentBankList(c *gin.Context){
+	 var agReq AgentReq
+	 data := make(map[string]interface{})
+	 if err:=c.BindJSON(&agReq);err!=nil{
+		 RespParamErr(c)
+		 return
+	 }
+	 agentId := agReq.Id
+	 merchantId := 1
+	 list,err := model.GetAgentBankList(model.Db, agentId, merchantId)
+	 if err != nil {
+		 RespServerErr(c)
+		 return
+	 }
+	 data["list"] = list
+	 RespJson(c,status.OK,data)
+ }

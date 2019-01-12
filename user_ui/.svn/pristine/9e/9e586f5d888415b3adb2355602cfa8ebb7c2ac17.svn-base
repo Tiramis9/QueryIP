@@ -1,0 +1,265 @@
+package og
+
+import (
+	"encoding/json"
+	"errors"
+	"fmt"
+	"io/ioutil"
+	"net/http"
+	"strings"
+)
+
+const (
+	TEST_OPERATOR_KEY    = "D4NDSJujqQwkZvQaadBj"
+	ALLBET_OPERATOR_NAME = "mog074jk"
+	ALLBET_API_URL       = "http://mucho.oriental-game.com:8057/"
+	PROXYADDR            = "http://127.0.0.1:1080/"
+	BLANCE_API_URL       = "http://api01.oriental-game.com:8085/"
+	/***********************************************************
+	ALLBET_AGENT_NAME  = "Name"
+	ALLBET_DES_KEY     = "f0Q2638+aVam6t0+YXaAtwamFNXPME5V"
+	ALLBET_MD5_KEY     = "pRyd5cngzAja4LMdzUeELeX2yqIs/V1DwHPwNuobAug="
+	ALLBET_PROPERTY_ID = "2143220"
+	PPP_API_URL        = "https://www.apidemo.net:8443/ams/"
+	USER_PASSWORD      = "123456"
+	USER_PREFIX        = "jkg_"
+	LOGIN_RETURN_URL   = "http://api.jkgsoft.com/game/allbet"*/
+)
+
+var error_code map[string]string = map[string]string{"OK": "ok", "INTERNAL_ERROR": "internet error",
+	"ILLEGAL_ARGUMENT": "illegal argument", "SYSTEM_MATAINING": "system mataining",
+	"AGENT_NOT_EXIST": "agent not exist", "CLIENT_EXIST": "client exist", "CLIENT_PASSWORD_INCORRECT": "client password incorrect",
+	"TOO_FREQUENT_REQUEST": "too frequent request", "CLIENT_NOT_EXIST": "client not exist", "TRANS_EXISTED": "trans existed",
+	"LACK_OF_MONEY": "lack of money", "DUPLICATE_CONFIRM": "duplicate confirm", "TRANS_NOT_EXIST": "trans not exist",
+	"DECRYPTION_FAILURE": "decryption failure", "FORBIDDEN": "forbidden", "INCONSISTENT_WITH_PRE_TRANS": "inconsistent with pre tans",
+	"INVALID_PROPERTYID": "invalid propertyid", "INVALID_SIGN": "invalid sign", "TRANS_FAILURE": "trans failure"}
+
+var lang_map map[string]string = map[string]string{"cn": "zh_CN"}
+
+type (
+	// OG注单
+	TransferActent struct {
+		/*************以下是必选参数*************/
+		SDate    string `json:"sDate"`
+		EDate    string `json:"eDate"`
+		Operator string `json:"operator"`
+		Key      string `json:"key"`
+		/*************以下是可选参数*************/
+		Provider          string `json:"provider"`
+		PlayerID          string `json:"playerid"`
+		TransactionNumber string `json:"transactionNumber"`
+		Exact             bool   `json:"exact"`
+	}
+	// 用户注册
+	RegisterReq struct {
+		UserName  string `json:"username"`
+		Country   string `json:"country"`
+		FullName  string `json:"fullname"`
+		Email     string `json:"email"`
+		Language  string `json:"language"`
+		Birthdate string `json:"birthdate"`
+	}
+	// 获取余额
+	BalanceReq struct {
+		UserName   string
+		Balance    float64
+		Action     string
+		TransferId string
+	}
+)
+
+//用户投注记录(10分钟内) //已调通
+func (a *GameOG) GetTransactionsInfoTenMin(msg *TransferActent) (map[string]interface{}, error) {
+	url := fmt.Sprintf("%v", "Transaction")
+	data := make(map[string]interface{})
+	data["SDate"] = msg.SDate
+	data["operator"] = msg.Operator
+	data["key"] = msg.Key
+	data["provider"] = msg.Provider
+	data["playerID"] = msg.PlayerID
+	data["EDate"] = msg.EDate
+	data["transactionNumber"] = msg.TransactionNumber
+	// data["exact"] = msg.Exact
+	fmt.Println("200 req:", data)
+	str, err := do_request(url, data)
+	if err != nil {
+		fmt.Println("err:", str)
+		return nil, err
+	}
+	fmt.Println("200 TenMin respond:", str)
+	return str, nil
+}
+
+// start play game
+func (a *GameOG) PlayGame(params map[string]interface{}) (string, error) {
+	url := fmt.Sprintf("%v%v/%v/%v", BLANCE_API_URL, "game-providers", a.ProviderId, "play")
+
+	map_res, err := do_requestGetBalance(url, params)
+	if err != nil {
+		return "", err
+	}
+	fmt.Println("200  PlayGame respond:", map_res)
+	return "", nil
+}
+
+//获取余额
+func (a *GameOG) Get_GameBalance(msg *BalanceReq) (string, error) {
+	data := map[string]interface{}{}
+	for key, value := range a.Data {
+		if key == "token" {
+			switch v := value.(type) {
+			case string:
+				data["X-Token"] = v
+			}
+		} else {
+			return "", errors.New("token of invaild")
+		}
+	}
+	/*
+		data["action"] = msg.Action
+		data["balance"] = msg.Balance
+		data["transferId"] = msg.TransferId
+	*/
+	data["username"] = msg.UserName
+	url := fmt.Sprintf("%v%v/%v/%v", BLANCE_API_URL, "game-providers", a.ProviderId, "balance")
+	map_res, err := do_requestGetBalance(url, data)
+	if err != nil {
+		return "", err
+	}
+	fmt.Println("200 Get_GameBalance respond:", map_res)
+	return map_res, nil
+}
+
+//注册 register  done
+func (a *GameOG) Register(info *RegisterReq) error {
+	fmt.Println("welcome to Register")
+	data := map[string]interface{}{}
+	for key, value := range a.Data {
+		if key == "token" {
+			switch v := value.(type) {
+			case string:
+				data["X-Token"] = v
+			}
+		} else {
+			return errors.New("token of invaild")
+		}
+	}
+	data["username"] = info.UserName
+	data["country"] = info.Country
+	data["email"] = info.Email
+	data["fullname"] = info.FullName
+	data["birthdate"] = info.Birthdate
+	map_res, err := do_request("register", data)
+	if err != nil {
+		return err
+	}
+	fmt.Println("200 Register respond:", map_res)
+	return nil
+}
+
+//  start POST请求 done
+func do_request(api_url string, data map[string]interface{}) (map[string]interface{}, error) {
+	var url string
+
+	result := strings.EqualFold(api_url, "Transaction")
+	if result == true {
+		url = fmt.Sprintf("%v%v", ALLBET_API_URL, api_url)
+	} else {
+		url = fmt.Sprintf("%v%v", BLANCE_API_URL, api_url)
+	}
+
+	cli, err := NewHttpClient(PROXYADDR)
+	if err != nil {
+		return nil, err
+	}
+	fmt.Println("url:", url)
+	//str, err := HttpPOST(cli, url, data)
+	str, err := HttpPOSTtest(cli, url, data)
+	if err != nil {
+		return nil, err
+	}
+	fmt.Println("200 body:", string(str))
+	msg := make(map[string]interface{}) // bind json
+	json.Unmarshal([]byte(str), &msg)
+	return msg, nil
+}
+
+// RegisterHandle请求
+func RegisterRequest(api_url string, params map[string]string) (map[string]interface{}, error) {
+	client := &http.Client{}
+	resp, err := http.NewRequest("GET", BLANCE_API_URL+api_url, nil) // client.Get(BLANCE_API_URL + api_url)
+	for key, value := range params {
+		fmt.Println("156 :", key, value)
+		resp.Header.Add(key, value)
+	}
+	//	resp.Header.Add("X-Operator", ALLBET_OPERATOR_NAME)
+	//resp.Header.Add("X-Key", TEST_OPERATOR_KEY)
+	if err != nil {
+		fmt.Println("164:", err)
+		return nil, err
+	}
+	//处理返回结果
+	response, err := client.Do(resp)
+	if err != nil {
+		fmt.Println(err)
+		return nil, err
+	}
+	defer response.Body.Close()
+
+	str, err := ioutil.ReadAll(response.Body)
+	if err != nil {
+		fmt.Println(err)
+		return nil, err
+	}
+	fmt.Println("171 Do:", response)
+	fmt.Printf("173 body: %s", string(str))
+	//str := HandleDeal(BLANCE_API_URL+api_url, data)
+	//fmt.Println("respond 140:", str)
+	msg := make(map[string]interface{}) //this code not got it
+	//json.Unmarshal([]byte(str), &msg)   // this code not got it
+	return msg, nil
+}
+
+// 获取token done 详细见TestRegister 案例
+func GetToken() (*GameOG, error) {
+	var game GameOG
+	url := fmt.Sprintf("%v%v", BLANCE_API_URL, "token")
+	cli, err := NewHttpClient(PROXYADDR)
+	if err != nil {
+		return nil, err
+	}
+	data, err := HttpGET(cli, url)
+	if err != nil {
+		return nil, err
+	}
+	json.Unmarshal(data, &game)
+	return &game, nil
+}
+
+// 查询余额GET请求
+func do_requestGetBalance(api_url string, params map[string]interface{}) (string, error) {
+	fmt.Println("url:", api_url)
+	cli, err := NewHttpClient(PROXYADDR)
+	if err != nil {
+		fmt.Println("err")
+		return "", err
+	}
+	str, err := HttpGETBalance(cli, api_url, params)
+	if err != nil {
+		fmt.Println("err")
+		return "", err
+	}
+
+	type Resp struct {
+		Status string `json:"status"`
+		Data   struct {
+			Balance string `json:"balance"`
+		} `json:"data"`
+	}
+
+	var msg Resp
+	if err := json.Unmarshal(str, &msg); err != nil {
+		return "", err
+	}
+	return msg.Data.Balance, nil
+}

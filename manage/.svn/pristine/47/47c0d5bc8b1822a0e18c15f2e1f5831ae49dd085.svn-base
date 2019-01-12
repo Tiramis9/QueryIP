@@ -1,0 +1,209 @@
+package model
+
+import (
+	"github.com/jinzhu/gorm"
+	"golang_game_merchant/lib/utils"
+	"time"
+)
+
+// query员工信息
+type QueryEmployeeInfo struct {
+	Id             int    `json:"uid"`    //out
+	TrueName       string `json:"true_name"`  //out
+	UserName       string `json:"user_name"` //out,in
+	LoginIp        string `json:"login_ip"`  //out
+	LastLoginTime  int64  `json:"last_login_time"` //out
+	Status         int    `json:"status,omitempty"`  //in
+	MerchantRoleId int    `json:"role_id"` //out
+	RoleName       string `json:"role_name"` //out, 在merchant_admin_role表中
+}
+
+//完全结构，位于表：merchant_admin,该结构用于add
+type FullEmployeeInfo struct {
+	Id             int    `json:"uid"`
+	MerchantId     int    `json:"merchant_id"`
+	TrueName       string `json:"true_name"` //in
+	UserName       string `json:"user_name"` //in
+	LoginIp        string `json:"login_ip"`
+	LoginTime      int64  `json:"login_time"`
+	CreateTime     int64  `json:"create_time"` 
+	Status         int    `json:"status"`      //in
+	UpdateTime     int64  `json:"update_time"`
+	MerchantRoleId int    `json:"role_id"` //in
+	LastLoginIp    string `json:"last_login_ip"`
+	LastLoginTime  int64  `json:"last_login_time"`
+	ParentId       int    `json:"parent_id"`
+	Salt           string `json:"salt"`     
+	Password       string `json:"password"` //in
+}
+
+//modify员工信息
+type ModifyEmployeeInfo struct {
+	Id             int    `json:"uid"`
+	TrueName       string `json:"true_name"`
+	UserName       string `json:"user_name"`
+	Status         int    `json:"status"`
+	MerchantRoleId int    `json:"role_id"`
+	Password       string `json:"password"`
+}
+
+//职务角色增删查改
+type EmployeeRole struct {
+	MerchantId int `json:"merchant_id,omitempty"`
+	Id int `json:"role_id"`   
+	RoleName   string `json:"role_name"` 
+	Permission string `json:"permission"` 
+	Status     int    `json:"status"`  
+	CreateTime int64 `json:"create_time,omitempty"`
+}
+
+// DESC    : 查询员工信息
+// IN      : {"token":int,"user_name":string(可选),"status":int(0,1可选)}
+// OUT     : merchant_admin(id`json:uid`,user_name,true_name,login_ip,last_login_time,merchant_role_id`role_id`) merchant_admin_role(role_name)
+// SQL示例 : SELECT ma.id,ma.user_name,ma.true_name,ma.login_ip,ma.last_login_time,ma.merchant_role_id,mar.role_name FROM merchant_admin AS ma RIGHT JOIN merchant_admin_role AS mar ON ma.merchant_role_id = mar.id AND ma.merchant_id = mar.merchant_id  WHERE (ma.merchant_id = 1  AND ma.user_name = '王大牛' AND ma.status = 1);
+func QueryEmployeeInfoList(db *gorm.DB, mid int, req *QueryEmployeeInfo) ([]QueryEmployeeInfo, error) {
+	whereStr := "ma.merchant_id = ? "
+	cond := make([]interface{}, 1)
+	cond[0] = mid
+	if req.UserName != "" {
+		whereStr += " AND ma.user_name = ?"
+		cond = append(cond, req.UserName)
+	}
+
+	//999,后期可能会改
+	if req.Status != 999 {
+		whereStr += " AND ma.status = ?"
+		cond = append(cond, req.Status)
+	}
+
+	var qeList []QueryEmployeeInfo
+	if err := db.Table(`merchant_admin AS ma`).Joins(`
+		RIGHT JOIN merchant_admin_role AS mar ON ma.merchant_role_id = mar.id AND ma.merchant_id = mar.merchant_id
+	`).Select(`
+		ma.id,ma.user_name,ma.true_name,ma.login_ip,ma.last_login_time,ma.merchant_role_id,mar.role_name
+	`).Where(whereStr, cond...).Find(&qeList).Error; err != nil {
+		if err == gorm.ErrRecordNotFound {
+			return nil, nil
+		}
+		return nil, err
+	}
+
+	return qeList, nil
+}
+
+//DESC    : 修改员工信息
+//IN      : {"token":int, "uid":int, "user_name":"string", "true_name":"string", "password":"string", "role_id": int, "status": int }
+//OUT     : null
+//SQL示例 : UPDATE merchant_admin SET password = "password",  status = 1, true_name = "张三",user_name = "zhangs", update_time = 1510001111, merchant_role_id = 1 WHERE (merchant_id = 1 AND id = 14 );
+func ModifyEmployeeInfoList(db *gorm.DB, mid int, req *ModifyEmployeeInfo) error {
+	salt := string(utils.Krand(4,3))
+	pvalue := utils.Md5S(utils.Md5S(salt+req.Password))
+	
+	fields := map[string]interface{}{
+		"user_name":   req.UserName,
+		"true_name":   req.TrueName,
+		"status":      req.Status,
+		"update_time": time.Now().Unix(),
+		"password":    pvalue,
+		"salt":        salt,
+	}
+	if err := db.Table(`merchant_admin`).Where(`merchant_id = ? AND id = ? `, mid, req.Id).Updates(fields).Error; err != nil {
+		return err
+	}
+
+	return nil
+}
+
+//DESC   : 新增员工信息
+//IN     : 参考FullEmployeeInfo注释
+//OUT    : null
+//SQL示例： 略
+func AddEmployeeInfo(db *gorm.DB, mid int, req *FullEmployeeInfo) error {  
+    salt := string(utils.Krand(4,3))
+	pvalue := utils.Md5S(utils.Md5S(salt+req.Password))
+	
+	req.Salt = salt
+	req.Password = pvalue
+	req.MerchantId = mid
+	req.CreateTime = time.Now().Unix()	
+
+	if err := db.Table(`merchant_admin`).Create(req).Error; err != nil {
+		return err
+	}
+
+	return nil
+}
+
+//DESC   : 删除员工信息
+//IN     : json(token,uid)
+//OUT    : null
+//SQL示例： 略
+func DelEmployeeInfo(db *gorm.DB, mid int, uid int) error {
+	if err := db.Table(`merchant_admin`).Where(`merchant_id = ? AND id = ? `, mid, uid).Delete(FullEmployeeInfo{}).Error; err != nil {
+		return err
+	}
+	return nil
+}
+
+//DESC   : 查询职务角色
+//IN     : json(token)
+//OUT    : merchant_admin_role(role_name, permission, status)
+//SQL示例： SELECT role_name,permission,status FROM merchant_admin_role  WHERE merchant_id = ?
+func QueryEmployeeRole(db *gorm.DB, mid int) ([]EmployeeRole,error) {
+	var roleList []EmployeeRole
+	err := db.Table(`merchant_admin_role`).Select(`role_name,permission,status`).Where(`merchant_id = ?`, mid).Find(&roleList).Error
+	if err != nil {
+		if err == gorm.ErrRecordNotFound {
+			return nil, nil
+		}
+		return nil, err
+	}
+
+	return roleList,nil
+}
+
+//DESC    : 修改职务角色
+//IN示例  :  {"role_id":2,"role_name":"大超管","permission":"1,2,3,4","status":1}
+//OUT     : null
+//SQL示例 : UPDATE merchant_admin_role SET permission = ?, role_name = ?, status = ?, update_time = ?  WHERE (merchant_id = ? AND id = ? )
+func ModifyEmployeeRole(db *gorm.DB, mid int,req *EmployeeRole) error {
+	field := map[string]interface{}{
+		"role_name":req.RoleName,
+		"permission":req.Permission,
+		"status":req.Status,
+		"update_time":time.Now().Unix(),
+	}
+
+	if err := db.Table(`merchant_admin_role`).Where(`merchant_id = ? AND id = ? `, mid, req.Id).Updates(field).Error; err != nil {
+		return err
+	}
+
+	return nil
+}
+
+//DESC    : 新增职务角色
+//IN示例  :  {token:int,role_name":"大超管","permission":"1,2,3,4","status":1}
+//OUT     : null
+//SQL示例 : INSERT INTO merchant_admin_role (merchant_id,role_name,permission,status,create_time) VALUES (?,?,?,?,?) //eg:VALUE(1,"超级管理","1,2,3,4",1,1542336996)
+func AddEmployeeRole(db *gorm.DB, mid int,req *EmployeeRole) error {
+	req.MerchantId = mid
+	req.CreateTime = time.Now().Unix()
+
+	if err := db.Table(`merchant_admin_role`).Create(req).Error; err != nil {
+		return err
+	}
+
+	return nil
+}
+
+//DESC    : 删除职务角色
+//IN示例  :  {"token":11,"role_id",111}
+//OUT     : null
+//SQL示例 : DELETE FROM merchant_admin_role  WHERE (merchant_id = ? AND id = ? )
+func DelEmployeeRole(db *gorm.DB, mid,uid int) error {
+	if err := db.Table(`merchant_admin_role`).Where(`merchant_id = ? AND id = ? `, mid, uid).Delete(EmployeeRole{}).Error; err != nil {
+		return err
+	}
+
+	return nil
+}

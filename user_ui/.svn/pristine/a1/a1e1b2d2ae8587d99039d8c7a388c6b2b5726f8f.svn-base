@@ -1,0 +1,37 @@
+package model
+
+import "github.com/jinzhu/gorm"
+
+type GameType struct {
+	Type int `json:"type"`
+}
+
+type Game struct {
+	Type      int    `json:"type,omitempty"`
+	Channel   string `json:"channel"`
+	Game_name string `json:"game_name"`
+	Game_code string `json:"game_code"`
+}
+
+func GetGameTypeList(db *gorm.DB, merchantId int) ([]GameType, error) {
+	var gameTypeList []GameType
+	if err := db.Table("merchant_game as mg").Select("sg.type").Joins("LEFT JOIN sys_game sg ON mg.game_id=sg.id").
+		Where("mg.merchant_id=?", merchantId).Group("sg.type").Find(&gameTypeList).Error; err != nil {
+		if err == gorm.ErrRecordNotFound {
+			return nil, nil
+		}
+		return nil, err
+	}
+	return gameTypeList, nil
+}
+
+func GetGameList(db *gorm.DB, ty int) ([]Game, error) {
+	var gameList []Game
+	if err := db.Table("sys_game").Where("type=?", ty).Find(&gameList).Error; err != nil {
+		if err == gorm.ErrRecordNotFound {
+			return nil, nil
+		}
+		return nil, err
+	}
+	return gameList, nil
+}

@@ -1,0 +1,60 @@
+package model
+
+import (
+	"errors"
+
+	"github.com/jinzhu/gorm"
+)
+
+type (
+	AnnouncementInfo struct {
+		Content    string `json:"content"`
+		Device     int    `json:"device"`
+		StartTime  int    `json:"start_time"`
+		EndTime    int    `json:"end_time"`
+		Status     int    `json:"status"`
+		Sort       int    `json:"sort"`
+		Type       int    `json:"type"`
+		Title      string `json:"title"`
+		Url        string `json:"url"`
+		MerchantID int    `json:"merchant_id"`
+		CreateTime int    `json:"create_time"`
+		UpdateTime int    `json:"update_time"`
+		Count      int
+	}
+	MerchantAnnouncement struct {
+		AnnouncementInfo
+	}
+)
+
+func GetMerchantAnnouncementList(db *gorm.DB, page int, pageCount int, msg map[string]interface{}) ([]MerchantAnnouncement, int, error) {
+	var msgType int
+	for point, data := range msg {
+		if point == "type" {
+			switch mString := data.(type) {
+			case string:
+				msgType = StringtoInt(mString)
+			case int:
+				msgType = mString
+			}
+		}
+	}
+	if msgType == 0 {
+		return nil, 0, errors.New("time are invaild")
+	}
+	var list []MerchantAnnouncement
+	if err := db.Debug().Table("merchant_announcement").Select("content,title,url,start_time,end_time,device,sort,type,status").Where("type=?",
+		msgType).Offset((page - 1) * pageCount).Limit(pageCount).Find(&list).Error; err != nil {
+		if err == gorm.ErrRecordNotFound {
+			return nil, 0, err
+		}
+		return nil, 0, err
+	}
+	db.Debug().Table("merchant_announcement").InstantSet("content", "h").Where("type=?", 1)
+	var count int
+	if err := db.Table(`merchant_announcement`).Where("type=?",
+		msgType).Count(&count).Error; err != nil {
+		return nil, 0, err
+	}
+	return list, count, nil
+}

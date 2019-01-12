@@ -1,0 +1,158 @@
+package router
+
+import (
+	"golang_game_merchant/action"
+	"golang_game_merchant/auth"
+
+	"github.com/gin-gonic/gin"
+)
+
+const Version = "v1"
+
+func RouteInit() *gin.Engine {
+	//gin.SetMode(gin.ReleaseMode)
+	engine := gin.Default()
+
+	// v1不用登陆能访问的路由
+	v1 := engine.Group("/" + Version)
+	{
+		//v1.POST("/login", action.UserLogin)                          //登录
+		//v1.POST("/register", action.UserRegister)                    //注册
+		v1.POST("/game_type_list", action.GameTypeList)              //获取游戏种类及下属游戏信息
+		v1.POST("/download_link", action.MerchantWebsiteAppDownload) //下载地址
+
+		//-------------------------------------------从这里开始
+		v1.POST("/login", action.MerchantLogin)   //登录
+		v1.POST("/logout", action.MerchantLogout) //商家管理(添加商家)
+
+		v1.POST("/query_basic_info", action.QueryMerchantBasicInfo)              //1-三级基本信息
+		v1.POST("/modify_basic_info", action.ModifyMerchantBasicInfo)            //  编辑基本信息
+		v1.POST("/query_member_registration", action.QueryMemberRegistration)    //2-会员注册页面设置(查询)
+		v1.POST("/modify_member_registration", action.ModifyMemberRegistration)  //  编辑注册页面设置(修改)
+		v1.POST("/query_merchant_game_status", action.QueryMerchantGameStatus)   //3-商户游戏状态
+		v1.POST("/modify_merchant_game_status", action.ModifyMerchantGameStatus) //  商户游戏状态编辑
+		v1.POST("/block_ip_address", action.BlockIPAddr)                         //4-屏蔽ip地址
+		v1.POST("/unblock_ip_address", action.UnblockIPAddr)                     //  解除屏蔽ip地址
+		v1.POST("/block_source_area", action.BlockSourceArea)                    //  屏蔽地区
+		v1.POST("/unblock_source_area", action.UnblockSourceArea)                //  解除屏蔽地区
+		v1.POST("/list_blocked_source", action.ListBlockedSource)                //  列出屏蔽的IP、地区
+		v1.POST("/query_warning_log", action.QueryWarningLog)                    //5-预警日志查询
+		v1.POST("/query_warning_policy", action.QueryWarningPolicy)              //6-预警策略查询
+		v1.POST("/modify_warning_policy", action.ModifyWarningPolicy)            //  预警策略修改
+		v1.POST("/query_employee_info", action.QueryEmployeeInfo)                //7-查询员工信息
+		v1.POST("/modify_employee_info", action.ModifyEmployeeInfo)              //  修改员工信息
+		v1.POST("/add_employee_info", action.AddEmployeeInfo)                    //  新增员工信息
+		v1.POST("/del_employee_info", action.DelEmployeeInfo)                    //  删除员工信息
+		v1.POST("/query_employee_role", action.QueryEmployeeRole)                //8-查询员工信息
+		v1.POST("/modify_employee_role", action.ModifyEmployeeRole)              //  修改员工信息
+		v1.POST("/add_employee_role", action.AddEmployeeRole)                    //  新增员工信息
+		v1.POST("/del_employee_role", action.DelEmployeeRole)                    //  删除员工信息
+		v1.POST("/operation_log", action.QueryOperationLog)                      //9-操作日志
+
+		v1.POST("/global_report", action.GlobalReport)            //全局报表
+		v1.POST("/announcement_list", action.AnnouncementList)    //公告列表
+		v1.POST("/announcement_add", action.AnnouncementAdd)      //公告添加
+		v1.POST("/announcement_edit", action.AnnouncementEdit)    //公告编辑
+		v1.POST("/announcement_del", action.AnnouncementDel)      //公告删除
+		v1.POST("/advertisement_list", action.AdvertisementList)  //广告列表
+		v1.POST("/advertisement_add", action.AdvertisementAdd)    //广告添加
+		v1.POST("/advertisement_edit", action.AdvertisementEdit)  //广告编辑
+		v1.POST("/advertisement_del", action.AdvertisementDel)    //广告删除
+		v1.POST("/message_list", action.MessageList)              //消息列表 todo
+		v1.POST("/class_list", action.MemberClassList)            //获取会员层级
+		v1.POST("/group_list", action.MemberGroupList)            //获取会员等级
+		v1.POST("/message_to_user_add", action.Message2UserAdd)   //添加会员接收消息
+		v1.POST("/message_to_agent_add", action.Message2AgentAdd) //添加代理接收消息
+		v1.POST("/transfer_interface_add", action.TransferAdd)    //增加转账汇款接口
+		v1.POST("/agent_list", action.AgentList)                  //代理列表
+		v1.POST("/agent_report_list", action.AgentReportList)     //代理报表
+		v1.POST("/agent_info", action.AgentInfo)                  //代理信息
+		//add by liul
+
+		v1.POST("/agent_bank_list", action.AgentBankList) //代理银行
+		//v1.POST("/agent_edit", action.AgentEdit)               //代理编辑
+		v1.POST("/agent_domain_add", action.AgentDomainAdd)                 //代理域名添加
+		v1.POST("/agent_domain_del", action.AgentDomainDel)                 //代理域名删除
+		v1.POST("/agent_domain_list", action.AgentDomainList)               //代理域名列表
+		v1.POST("/agent_class_list", action.AgentClassList)                 //代理层级列表
+		v1.POST("/agent_class_info", action.AgentClassInfo)                 //代理层级详情
+		v1.POST("/agent_class_edit", action.AgentClassEdit)                 //代理层级编辑
+		v1.POST("/agent_class_add", action.AgentClassAdd)                   //代理层级新增
+		v1.POST("/agent_class_del", action.AgentClassDel)                   //代理层级删除
+		v1.POST("/agent_apply_list", action.AgentApplyList)                 //代理申请列表
+		v1.POST("/agent_apply_edit", action.AgentApplyEdit)                 //代理申请更改状态(审核通过、不通过)
+		v1.POST("/agent_brokerage_edit", action.BrokerageEdit)              //代理报表编辑（审核处理）
+		v1.POST("/sys_active_info", action.SysActiveInfo)                   // 系统活动详情
+		v1.POST("/merchant_active_add", action.MerchantActiveAdd)           // 商户添加活动
+		v1.POST("/merchant_active_info", action.MerchantActiveGet)          // 获取商户活动
+		v1.POST("/merchant_active_list", action.MerchantActiveOverviewList) // 获取活动概述列表
+
+		v1.POST("/subordinate_list", action.SubordinateList)     //下级会员列表
+		v1.POST("/brokerage_report", action.BrokerageReportList) //佣金报表
+		v1.POST("/brokerage_history", action.BrokerageHistory)   //返佣历史
+		v1.POST("/game_all_report", action.GameAllList)          //游戏报表
+		v1.POST("/game_list", action.GameList)                   //游戏列表
+		v1.POST("/game_singel_report", action.GameSingleReport)  //单个游戏报表
+
+		//add by jeff
+		v1.POST("/user_list", action.GetUserList)                          //会员列表
+		v1.POST("/user_edit", action.UserEdit)                             //编辑会员
+		v1.POST("/get_user_info", action.GetUserInfo)                      //获取会员信息
+		v1.POST("/security_questions", action.UserGetSecurity)             //密保问题
+		v1.POST("/user_login_log", action.GetUserLoginLogList)             //用户登录日志
+		v1.POST("/user_class_list", action.UserClassList)                  //会员层级列表
+		v1.POST("/user_class_info", action.UserClassInfo)                  //会员层级详情
+		v1.POST("/user_class_edit", action.UserClassEdit)                  //会员层级编辑
+		v1.POST("/user_class_del", action.UserClassDel)                    //会员层级删除
+		v1.POST("/user_class_add", action.UserClassAdd)                    //会员层级添加
+		v1.POST("/user_group_list", action.GetMerchantUserGroupList)       //会员等级列表
+		v1.POST("/user_group_operate", action.UserGroupOperate)            //会员等级添加/编辑
+		v1.POST("/user_group_del", action.UserGroupDel)                    //会员等级删除
+		v1.POST("/user_group_config", action.GetUserGroupConfigInfo)       //会员等级配置获取
+		v1.POST("/user_group_config_edit", action.UserGroupConfigInfoEdit) //会员等级配置编辑
+		v1.POST("/user_rebate_log_list", action.GetRebateLogList)          //反水生成日志
+
+	}
+
+	// v1需要登陆才能访问的路由
+	v1Auth := v1.Use(auth.Auth)
+	{
+		v1Auth.GET("/ping", action.PingPong)
+
+		// --------财务管理相关接口开始--------
+		v1Auth.POST("/member_bill", action.MemberBill)                         //财务管理(帐变记录)
+		v1Auth.POST("/recharge_bill_online_pay", action.RechargeBillOnlinePay) //财务管理(充值记录-在线支付)
+		v1Auth.POST("/recharge_bill_transfer", action.RechargeBillTransfer)    //财务管理(充值记录-转账汇款)
+		v1Auth.POST("/recharge_bill_back_add", action.RechargeBillBackAdd)     //财务管理(充值记录-后台加款)
+		v1Auth.POST("/withdraw_bill", action.WithdrawBill)                     //财务管理(提现记录会员提现)
+		v1Auth.POST("/withdraw_bill_back", action.WithdrawBillBack)            //财务管理(提现记录后台扣款)
+		v1Auth.POST("/game_trans_bill", action.GameTransBill)                  //财务管理(游戏转账)
+		v1Auth.POST("/query_user_balance", action.QueryUserBalance)            //根据用户名查询会员(加扣款前访问这个)
+
+		//v1Auth.POST("/recharge_trans_bill", action.RechargeTransBill)                    //财务管理帐变记录(转账)
+		v1Auth.POST("/center_account_balance_switch", action.CenterAccountBalanceSwitch)    //中心账户加扣款
+		v1Auth.POST("/query_game_balance", action.QueryGameBalance)                         //查询游戏余额
+		v1Auth.POST("/finance_report_list", action.FinanceList)                             //财务报表
+		v1Auth.POST("/export_recharge_bill_list", action.ExportRechargeBillList)            //导出充值记录excel
+		v1Auth.POST("/third_part_account_balance_switch", action.ThirdAccountBalanceSwitch) //第三方账户加扣款
+		v1Auth.POST("/online_payments_interface_list", action.OnlinePaymentsList)           //在线支付接口列表
+		v1Auth.POST("/online_payments_interface_add", action.OnlinePaymentsAdd)             //增加在线支付接口
+		v1Auth.POST("/online_payments_interface_edit", action.OnlinePaymentsEdit)           //编辑在线支付接口
+		v1Auth.POST("/online_payments_interface_del", action.OnlinePaymentsDel)             //删除在线支付接口
+		v1Auth.POST("/credit_limit_list", action.CreditLimitList)                           //信用额度-额度帐变接口
+		v1Auth.POST("/credit_limit_transfer_list", action.CreditLimitTransferList)          //信用额度-充值记录接口
+		// --------财务管理相关接口结束--------
+	}
+
+	v2 := engine.Group("/v2")
+	{
+		//no auth router of v2
+	}
+
+	v2Auth := v2.Use(auth.Auth)
+	{
+		v2Auth.GET("/ping", action.PingPong)
+	}
+
+	return engine
+}

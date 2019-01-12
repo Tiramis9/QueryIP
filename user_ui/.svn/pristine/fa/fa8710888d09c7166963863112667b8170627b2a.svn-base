@@ -1,0 +1,531 @@
+package Imone
+
+import (
+	"encoding/json"
+	"errors"
+	"fmt"
+	"game2/lib/game"
+	"strings"
+)
+
+const (
+	REQUSTERROR  = "requst invalid parameter"
+	MERCHANTCODE = "O6mNeVFqy7HmSHv2BTVOwQ97wTTCbEcS" //prrvate Key
+	AGENTURLAPI  = "http://operatorapi.staging.imaegisapi.com"
+	AgentName    = "jiakuiprod"
+	RESELLERNAME = "R_24TECH"
+	Prefix       = "IMONE"
+)
+
+var monneyMap = map[string]string{"en": "USD", "cn": "CNY", "zh": "CNY", "RMB": "CNY", "USD": "USD"}
+var langMap = map[string]string{"en": "EN", "cn": "ZH-CN"}
+
+type GameImone struct {
+	Host         string
+	Key          string
+	AgentName    string
+	ResellerName string
+}
+type (
+
+	// 注册参数
+	Reister struct {
+		MerchantCode string `json:"MerchantCode"` // 营运商唯一代码 (必填)
+		PlayerId     string `json:"playerId"`     // 玩家账号 (必填)
+		Currency     string `json:"currency"`     // 接受的货币代码(必填) CNY, USD, EUR, JPY, MYR, IDR, VND, THB, KRW, CGC
+		Password     string `json:"password"`     // (必填)
+		Country      string `json:"country"`      // 国家码(非必须的参数)
+		Sex          string `json:"sex"`          // 非必须的参数
+		BirthDate    string `json:"birthDate"`    // 非必须的参数
+	}
+	// 注册回复
+	RespReister struct {
+		Code     string `json:"Code"`
+		Message  string `json:"Message"`
+		Currency string `json:"Currency"`
+		Status   string `json:"Status"`
+	}
+	// 余额回复
+	RespBalance struct {
+		Code     string `json:"Code"`
+		Message  string `json:"Message"`
+		Balance  string `json:"Balance"`
+		Currency string `json:"Currency"`
+	}
+	// 启动游戏
+	ReqGame struct {
+		MerchantCode  string `json:"MerchantCode"`
+		PlayerId      string `json:"PlayerId"`
+		GameCode      string `json:"GameCode"`
+		Language      string `json:"Language"`
+		IpAddress     string `json:"IpAddress"`
+		ProductWallet int    `json:"ProductWallet"`
+		Http          string `json:"Http"`
+		IsDownload    int    `json:"IsDownload"`
+		LobbyURL      string `json:"LobbyURL"`
+		SupportURL    string `json:"SupportURL"`
+		LogoutURL     string `json:"LogoutURL"`
+		DepositURL    string `json:"DepositURL"`
+		Tray          string `json:"Tray"`
+		StartDate     string `json:"StartDate"`
+		EndDate       string `json:"EndDate"`
+	}
+	ResGameUrl struct {
+		Code    string `json:"Code"`
+		Message string `json:"Message"`
+		GameUrl string `json:"GameUrl"`
+	}
+)
+
+// 注册
+func (a *GameImone) Register(req map[string]interface{}) (resp interface{}, err error) {
+	url := fmt.Sprintf("%v/%v/%v", a.Host, "Player", "Register")
+	var respResult RespReister
+	dataSend := make(map[string]interface{})
+	if a.Key == "" {
+		return nil, errors.New(REQUSTERROR)
+	}
+	player, ok := req["PlayerId"]
+	if !ok {
+		return nil, errors.New(REQUSTERROR)
+	}
+	curr, ok := req["Currency"]
+	if !ok {
+		return nil, errors.New(REQUSTERROR)
+	}
+	password, ok := req["Password"]
+	if !ok {
+		return nil, errors.New(REQUSTERROR)
+	}
+	if a.Key == "" {
+		return nil, errors.New(REQUSTERROR)
+	}
+	country, ok := req["Country"]
+	if ok {
+		dataSend["Country"] = country
+	}
+	sex, ok := req["Sex"]
+	if ok {
+		dataSend["Sex"] = sex
+
+	}
+
+	birth, ok := req["BirthDate"]
+	if ok {
+		dataSend["BirthDate"] = birth
+	}
+	dataSend["PlayerId"] = fmt.Sprintf("%v", player)
+	dataSend["Currency"] = curr
+	dataSend["Password"] = password
+	dataSend["MerchantCode"] = a.Key
+	res, err := HttpPostPROXY(url, dataSend)
+	if err != nil {
+		return nil, err
+	}
+
+	err = json.Unmarshal(res, &respResult)
+	if err != nil {
+		return nil, err
+	}
+	result := strings.EqualFold(respResult.Message, "Successful.")
+	if !result {
+		return nil, errors.New(respResult.Message)
+	}
+	resp = respResult.Currency
+	err = nil
+	return
+}
+
+// 登陆
+func (a *GameImone) Login(req map[string]interface{}) (resp interface{}, err error) {
+	var respResult ResGameUrl
+	GameCode := "IMSB"
+	ProductWallet := 301
+	url := fmt.Sprintf("%v/%v/%v", a.Host, "Game", "NewLaunchGame")
+	data := make(map[string]interface{})
+	if a.Key == "" {
+		return nil, errors.New(REQUSTERROR)
+	}
+	if a.Host == "" {
+		return nil, errors.New(REQUSTERROR)
+	}
+	username, ok := req["game_user_name"]
+	if !ok {
+		return nil, errors.New(REQUSTERROR)
+	}
+	lang, ok := req["lang"]
+	if !ok {
+		return nil, errors.New(REQUSTERROR)
+	}
+	ipaddr, ok := req["login_ip"]
+	if !ok {
+		return nil, errors.New(REQUSTERROR)
+	}
+	data["MerchantCode"] = a.Key
+	data["PlayerId"] = username
+	data["ProductWallet"] = ProductWallet
+	data["Language"] = langMap[lang.(string)]
+	data["GameCode"] = GameCode
+	data["IpAddress"] = ipaddr
+	res, err := HttpPostPROXY(url, data)
+	if err != nil {
+		return "", err
+	}
+	err = json.Unmarshal(res, &respResult)
+	if err != nil {
+		return "", err
+	}
+	notId := strings.Compare(respResult.Message, "Successful.")
+	if notId != 0 {
+		deal := data
+		noney, ok := req["moneysort"]
+		if !ok {
+			return nil, errors.New(REQUSTERROR + " nonery")
+		}
+		deal["Password"] = "123456"
+		deal["Currency"] = monneyMap[noney.(string)]
+		_, err := a.Register(deal)
+		if err != nil {
+			return "", err
+		}
+		res, err := HttpPostPROXY(url, data)
+		if err != nil {
+			return "", err
+		}
+		err = json.Unmarshal(res, &respResult)
+		if err != nil {
+			return "", err
+		}
+		return respResult.GameUrl, nil
+	}
+	return respResult.GameUrl, nil
+}
+
+// 获取余额
+func (a *GameImone) GetBalance(req map[string]interface{}) (interface{}, error) {
+	var respResult RespBalance
+	resultMap := make(map[string]interface{})
+	url := fmt.Sprintf("%v/%v/%v", a.Host, "Player", "GetBalance")
+	data := make(map[string]interface{})
+	if a.Key == "" {
+		return nil, errors.New(REQUSTERROR)
+	}
+	if a.Host == "" {
+		return nil, errors.New(REQUSTERROR)
+	}
+	player, ok := req["PlayerId"]
+	if !ok {
+		return nil, errors.New(REQUSTERROR)
+	}
+	Produ, ok := req["ProductWallet"]
+	if !ok {
+		return nil, errors.New(REQUSTERROR)
+	}
+	data["MerchantCode"] = a.Key
+	data["PlayerId"] = player
+	data["ProductWallet"] = Produ
+	res, err := HttpPostPROXY(url, data)
+	if err != nil {
+		return nil, err
+	}
+	err = json.Unmarshal(res, &respResult)
+	if err != nil {
+		return nil, err
+	}
+	result := strings.EqualFold(respResult.Message, "Successful.")
+	if !result {
+		return nil, errors.New(respResult.Message)
+	}
+	resultMap["Balance"] = respResult.Balance
+	resultMap["Currency"] = respResult.Currency
+	return resultMap, nil
+}
+
+// 资金转入
+func (a *GameImone) Account2GameTransfer(req map[string]interface{}) (resp interface{}, err error) {
+	var respResult RespReister
+	url := fmt.Sprintf("%v/%v/%v", a.Host, "Transaction", "PerformTransfer")
+	data := make(map[string]interface{})
+	if a.Key == "" {
+		return "", errors.New(REQUSTERROR)
+	}
+	Produ, ok := req["ProductWallet"]
+	if !ok {
+		return "", errors.New(REQUSTERROR)
+	}
+	Tran, ok := req["TransactionId"]
+	if !ok {
+		return "", errors.New(REQUSTERROR)
+	}
+	amount, ok := req["Amount"]
+	if !ok {
+		return "", errors.New(REQUSTERROR)
+	}
+	player, ok := req["PlayerId"]
+	if !ok {
+		return "", errors.New(REQUSTERROR)
+	}
+	data["MerchantCode"] = a.Key
+	data["PlayerId"] = player
+	data["ProductWallet"] = Produ
+	data["TransactionId"] = Tran
+	data["Amount"] = amount
+	_, err = CheckTransferStatus(data)
+	if err != nil {
+		return "", err
+	}
+	res, err := HttpPostPROXY(url, data)
+	if err != nil {
+		return "", err
+	}
+	err = json.Unmarshal(res, &respResult)
+	if err != nil {
+		return "", err
+	}
+	result := strings.EqualFold(respResult.Message, "Successful.")
+	if !result {
+		return "", errors.New(respResult.Message)
+	}
+	return respResult.Status, nil
+}
+
+func (a *GameImone) Game2AccountTransfer(req map[string]interface{}) (resp interface{}, err error) {
+	return nil, nil
+}
+
+// 查询日志
+func (a *GameImone) QueryRecord(req map[string]interface{}) (resp interface{}, err error) {
+	return nil, nil
+}
+
+func GetPlayerGames(msg *ReqGame) (interface{}, error) {
+	var respResult ResGameUrl
+	url := fmt.Sprintf("%v/%v/%v", AGENTURLAPI, "Report", "GetPlayerGames")
+	data := make(map[string]interface{})
+	if msg.MerchantCode == "" {
+		return nil, errors.New(REQUSTERROR)
+	}
+	if msg.PlayerId == "" {
+		return nil, errors.New(REQUSTERROR)
+	}
+	if msg.ProductWallet < 0 {
+		return nil, errors.New(REQUSTERROR)
+	}
+
+	if msg.StartDate == "" {
+		return nil, errors.New(REQUSTERROR)
+	}
+	if msg.EndDate == "" {
+		return nil, errors.New(REQUSTERROR)
+	}
+	data["MerchantCode"] = msg.MerchantCode
+	data["PlayerId"] = msg.PlayerId
+	data["ProductWallet"] = msg.ProductWallet
+	data["StartDate"] = msg.StartDate
+	data["EndDate"] = msg.EndDate
+	fmt.Println("req: code ", data)
+	res, err := HttpPostPROXY(url, data)
+	if err != nil {
+		return "", err
+	}
+	fmt.Println("code 200:", string(res))
+	err = json.Unmarshal(res, &respResult)
+	if err != nil {
+		return "", err
+	}
+	result := strings.EqualFold(respResult.Message, "Successful.")
+	if !result {
+		return "", errors.New(respResult.Message)
+	}
+	return nil, nil
+}
+
+// 获取注册玩家信息
+func (a *GameImone) GetExistsPlayer(msg map[string]interface{}) (resp interface{}, err error) {
+	var respResult RespReister
+	url := fmt.Sprintf("%v/%v/%v", AGENTURLAPI, "Player", "CheckExists")
+	data := make(map[string]string)
+
+	data["MerchantCode"] = a.Key
+	data["PlayerId"] = msg["PlayerId"].(string)
+	res, err := HttpPostPROXY(url, data)
+	if err != nil {
+		return "", err
+	}
+	err = json.Unmarshal(res, &respResult)
+	if err != nil {
+		return "", err
+	}
+	result := strings.EqualFold(respResult.Message, "Successful.")
+	if !result {
+		return "", errors.New(respResult.Message)
+	}
+	resp = respResult.Currency
+	err = nil
+	return
+}
+
+// 设置密码
+func (aInfo *GameImone) ResetPassword(msg map[string]interface{}) (interface{}, error) {
+	var respResult RespReister
+	url := fmt.Sprintf("%v/%v/%v", AGENTURLAPI, "Player", "ResetPassword")
+	data := make(map[string]interface{})
+	if aInfo.Key == "" {
+		return "", errors.New(REQUSTERROR)
+	}
+	name, ok := msg["PlayerId"]
+	if !ok {
+		return "", errors.New(REQUSTERROR)
+	}
+	passwd, ok := msg["Password"]
+	if !ok {
+		return "", errors.New(REQUSTERROR)
+	}
+	data["MerchantCode"] = aInfo.Key
+	data["PlayerId"] = name
+	data["Password"] = passwd
+	res, err := HttpPostPROXY(url, data)
+	if err != nil {
+		return "", err
+	}
+	err = json.Unmarshal(res, &respResult)
+	if err != nil {
+		return "", err
+	}
+	result := strings.EqualFold(respResult.Message, "Successful.")
+	if !result {
+		return "", errors.New(respResult.Message)
+	}
+	return respResult.Code, nil
+}
+
+// 获取游戏前缀
+func (a *GameImone) GetPrefix() string {
+	return Prefix
+}
+
+// 查询转账交易状态
+func CheckTransferStatus(msg map[string]interface{}) (string, error) {
+	var respResult RespReister
+	url := fmt.Sprintf("%v/%v/%v", AGENTURLAPI, "Transaction", "CheckTransferStatus")
+	data := make(map[string]interface{})
+	merchant, ok := msg["MerchantCode"]
+	if !ok {
+		return "", errors.New(REQUSTERROR)
+	}
+	Produ, ok := msg["ProductWallet"]
+	if !ok {
+		return "", errors.New(REQUSTERROR)
+	}
+	Tran, ok := msg["TransactionId"]
+	if !ok {
+		return "", errors.New(REQUSTERROR)
+	}
+	play, ok := msg["PlayerId"]
+	if !ok {
+		return "", errors.New(REQUSTERROR)
+	}
+	data["MerchantCode"] = merchant
+	data["PlayerId"] = play
+	data["ProductWallet"] = Produ
+	data["TransactionId"] = Tran
+	res, err := HttpPostPROXY(url, data)
+	if err != nil {
+		return "", err
+	}
+	err = json.Unmarshal(res, &respResult)
+	if err != nil {
+		return "", err
+	}
+	result := strings.EqualFold(respResult.Message, "Successful.")
+	if !result {
+		return "", errors.New(respResult.Message)
+	}
+	return respResult.Status, nil
+}
+
+// 检查LOG 入参
+func CheckGetBetLogParam(msg map[string]interface{}) (map[string]interface{}, error) {
+	data := make(map[string]interface{})
+	produ, ok := msg["ProductWallet"]
+	if !ok {
+		return nil, errors.New(REQUSTERROR)
+	}
+	cur, ok := msg["Currency"]
+	if !ok {
+		return nil, errors.New(REQUSTERROR)
+	}
+	page, ok := msg["Page"].(int)
+	if !ok {
+		return nil, errors.New(REQUSTERROR)
+	}
+	if page <= 0 {
+		page = 1
+	}
+	pageSize, ok := msg["PageSize"].(int)
+	if !ok || pageSize <= 0 {
+		return nil, errors.New(REQUSTERROR)
+	}
+	sdate, ok := msg["StartDate"]
+	if !ok {
+		return nil, errors.New(REQUSTERROR)
+	}
+	edate, ok := msg["EndDate"]
+	if !ok {
+		return nil, errors.New(REQUSTERROR)
+	}
+	data["ProductWallet"] = produ
+	data["Currency"] = cur
+	data["Page"] = page
+	data["PageSize"] = pageSize
+	data["StartDate"] = sdate
+	data["EndDate"] = edate
+	return data, nil
+
+}
+
+// 玩家下注日志,日志的搜寻时间区间封顶在 10 分钟
+func (aInfo *Reister) GetBetLog(msg map[string]interface{}) (map[string]interface{}, error) {
+	var respResult ResProductWallet
+	resultMap := make(map[string]interface{})
+	url := fmt.Sprintf("%v/%v/%v", AGENTURLAPI, "Report", "GetBetLog")
+	//data := make(map[string]interface{})
+	if aInfo.MerchantCode == "" {
+		return nil, errors.New(REQUSTERROR)
+	}
+	Map, err := CheckGetBetLogParam(msg)
+	if err != nil {
+		return nil, errors.New(REQUSTERROR)
+	}
+	Map["MerchantCode"] = aInfo.MerchantCode
+	fmt.Println("URL:", url)
+	fmt.Println("req:", Map)
+	res, err := HttpPostPROXY(url, Map)
+	if err != nil {
+		return nil, err
+	}
+	fmt.Println("GetBetLog 200:", string(res))
+	err = json.Unmarshal(res, &respResult)
+	if err != nil {
+		return nil, err
+	}
+	result := strings.EqualFold(respResult.Message, "Successful.")
+	if !result {
+		return nil, errors.New(respResult.Message)
+	}
+
+	return resultMap, nil
+}
+
+func NewIMONEGame() game.Game {
+	return &GameImone{
+		Host:         AGENTURLAPI,
+		Key:          MERCHANTCODE,
+		AgentName:    AgentName,
+		ResellerName: RESELLERNAME,
+	}
+}
+
+func init() {
+	game.Register("imone", NewIMONEGame)
+}

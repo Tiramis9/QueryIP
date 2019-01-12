@@ -1,0 +1,224 @@
+package action
+
+import (
+	"fmt"
+	"game2/global/status"
+	"game2/lib/utils"
+	"game2/logic"
+	"game2/model"
+	"game2/service"
+	"github.com/gin-gonic/gin"
+	"github.com/sirupsen/logrus"
+)
+
+type AccountTransReq struct {
+	From   int     `json:"from" binding:"required"`
+	To     int     `json:"to" binding:"required"`
+	Amount float64 `json:"amount"`
+}
+
+type AccountInfoReq struct {
+	GameName string `json:"game_name" binding:"required"`
+}
+
+type AccountReportReq struct {
+	StartTime int64 `json:"start_time"`
+	EndTime int64 `json:"end_time"`
+}
+
+//账户列表
+func AccountList(c *gin.Context) {
+	data := make(map[string]interface{})
+	uid, ok := c.Get("user_id")
+	if !ok {
+		RespServerErr(c)
+		return
+	}
+	userId := int(uid.(float64))
+	fmt.Println(userId)
+	merchantId, ok := c.Get("merchant_id")
+	if !ok {
+		RespServerErr(c)
+		return
+	}
+	merchId := int(merchantId.(float64))
+	//转为整形
+	//获取列表
+	list, err := model.GetAccountListByUserId(model.Db, merchId)
+	if err != nil {
+		RespServerErr(c)
+		return
+	}
+	data["list"] = list
+	RespJson(c, status.OK, data)
+}
+
+//账户详情
+func AccountInfo(c *gin.Context) {
+	var m AccountInfoReq
+	res := make(map[string]interface{})
+	userInfo := make(map[string]string)
+	if err := c.BindJSON(&m); err != nil {
+		RespParamErr(c)
+		return
+	}
+	gameName := m.GameName
+	tokenS, ok := c.Request.Header["Token"]
+	if !ok {
+		logrus.Error("no token")
+		RespParamErr(c)
+		return
+	}
+	mapInfo := logic.UserInfoByRedis(tokenS[0])
+	userInfo["user_name"] = mapInfo["user_name"].(string)
+	//调用service
+	balance, err := service.GameGetBalance(gameName, userInfo)
+	if err != nil {
+		RespServerErr(c)
+		return
+	}
+	res["game_balance"] = balance
+	res["game_name"] = gameName
+	RespJson(c, status.OK, res)
+}
+
+//账户间转移
+func AccountTrans(c *gin.Context) {
+	var m AccountTransReq
+	if err := c.BindJSON(&m); err != nil {
+		RespServerErr(c)
+		return
+	}
+	id, ok := c.Get("user_id")
+	if !ok {
+		RespServerErr(c)
+		return
+	}
+	userId := int(id.(float64))
+
+	if (m.From == 0 && m.To == 0) || (m.From != 0 && m.To != 0) {
+		RespParamErr(c)
+		return
+	}
+	account := m.From
+	if m.From == 0 {
+		account = m.To
+	}
+	if m.Amount < 0 {
+		RespParamErr(c)
+		return
+	}
+	//需要判断数组是否越界
+	count := len(utils.AccountType)
+	if account > count {
+		RespParamErr(c)
+		return
+	}
+	accountName := utils.AccountType[account-1]
+	accountModel := model.UserAccount{AccountName: accountName, UserId: userId, Money: m.Amount}
+	//获取列表
+	res, err := accountModel.TransAccount(model.Db, userId, m.From, m.To, m.Amount)
+	if err != nil {
+		RespServerErr(c)
+		return
+	}
+	if res == 101 {
+		RespJson(c, status.ErrNoEnoughMoney, nil)
+		return
+	}
+	if res == 500 {
+		RespServerErr(c)
+		return
+	}
+	RespSuccess(c)
+}
+
+//游戏报表
+func AccountReport(c *gin.Context) {
+	var suc map[string]interface{}
+	id, ok := c.Get("user_id")
+	if !ok {
+		RespServerErr(c)
+		return
+	}
+	var m AccountReportReq
+	if err := c.BindJSON(&m); err != nil {
+		RespServerErr(c)
+		return
+	}
+	userId := int(id.(float64))
+	startTime,endTime := InitTimeSearch(m.StartTime, m.EndTime)
+	//调用第三方接口
+	data1 := [...]map[string]interface{}{
+		{"game_name": "沙巴体育", "num": "100", "bill_amt": "200.00", "win": "30.00"},
+		{"game_name": "BB体育", "num": "100", "bill_amt": "100.00", "win": "-10.00"},
+		{"game_name": "NEW BB体育", "num": "100", "bill_amt": "101.00", "win": "20.00"},
+	}
+	data2 := [...]map[string]interface{}{
+		{"game_name": "沙巴体育", "num": "100", "bill_amt": "200.00", "win": "30.00"},
+		{"game_name": "BB体育", "num": "100", "bill_amt": "100.00", "win": "-10.00"},
+		{"game_name": "NEW BB体育", "num": "100", "bill_amt": "101.00", "win": "20.00"},
+	}
+	data3 := [...]map[string]interface{}{
+		{"game_name": "沙巴体育", "num": "100", "bill_amt": "200.00", "win": "30.00"},
+		{"game_name": "BB体育", "num": "100", "bill_amt": "100.00", "win": "-10.00"},
+		{"game_name": "NEW BB体育", "num": "100", "bill_amt": "101.00", "win": "20.00"},
+	}
+	data4 := [...]map[string]interface{}{
+		{"game_name": "沙巴体育", "num": "100", "bill_amt": "200.00", "win": "30.00"},
+		{"game_name": "BB体育", "num": "100", "bill_amt": "100.00", "win": "-10.00"},
+		{"game_name": "NEW BB体育", "num": "100", "bill_amt": "101.00", "win": "20.00"},
+	}
+	data5 := [...]map[string]interface{}{
+		{"game_name": "沙巴体育", "num": "100", "bill_amt": "200.00", "win": "30.00"},
+		{"game_name": "BB体育", "num": "100", "bill_amt": "100.00", "win": "-10.00"},
+		{"game_name": "NEW BB体育", "num": "100", "bill_amt": "101.00", "win": "20.00"},
+	}
+	count := [...]map[string]interface{}{
+		{"name": "sport", "bill_amt": "200.00", "win": "30.00"},
+		{"name": "lottery", "bill_amt": "100.00", "win": "-10.00"},
+		{"name": "real", "bill_amt": "101.00", "win": "20.00"},
+		{"name": "chess", "bill_amt": "101.00", "win": "20.00"},
+		{"name": "game", "bill_amt": "101.00", "win": "20.00"},
+	}
+	dataList := map[string]interface{}{}
+	dataList["sport"] = data1
+	dataList["lottery"] = data2
+	dataList["real"] = data3
+	dataList["chess"] = data4
+	dataList["game"] = data5
+	suc["data"] = dataList
+	suc["start_time"] = startTime
+	suc["end_time"] = endTime
+	suc["user_id"] = userId
+	suc["count"] = count
+	RespJson(c, status.OK, suc)
+}
+
+//打赏报表
+func AccountReward(c *gin.Context) {
+	suc := make(map[string]interface{})
+	id, ok := c.Get("user_id")
+	if !ok {
+		RespServerErr(c)
+		return
+	}
+	var m AccountReportReq
+	if err := c.BindJSON(&m); err != nil {
+		RespServerErr(c)
+		return
+	}
+	userId := int(id.(float64))
+	startTime,endTime := InitTimeSearch(m.StartTime, m.EndTime)
+	//调用第三方接口
+	data := [...]map[string]interface{}{
+		{"game_name": "彩播", "reward": "200.00"},
+		{"game_name": "BB彩播", "reward": "100.00"},
+		{"game_name": "NEW BB彩播", "reward": "101.00"},
+	}
+	suc["data"] = data
+	suc["start_time"] = startTime
+	suc["end_time"] = endTime
+	suc["user_id"] = userId
+	RespJson(c,status.OK,suc)
+}

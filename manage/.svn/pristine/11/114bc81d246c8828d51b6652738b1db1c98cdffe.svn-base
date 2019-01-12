@@ -1,0 +1,125 @@
+package model
+
+import (
+	"github.com/jinzhu/gorm"
+	"time"
+)
+
+// query
+type QueryEmployee struct {
+	Id             int    `json:"uid"`
+	TrueName       string `json:"true_name"`
+	UserName       string `json:"user_name"`
+	LoginIp        string `json:"login_ip"`
+	Status         int    `json:"status"`
+	MerchantRoleId int    `json:"role_id"`
+	RoleName       string `json:"role_name"` //在merchant_admin_role表中
+}
+
+//表：merchant_admin,该结构用于add
+type FullEmployee struct {
+	Id             int    `json:"uid"`
+	MerchantId     int    `json:"merchant_id"`
+	TrueName       string `json:"true_name"` //add
+	UserName       string `json:"user_name"` //add
+	LoginIp        string `json:"login_ip"`
+	LoginTime      int64  `json:"login_time"`
+	CreateTime     int64  `json:"create_time"` //add
+	Status         int    `json:"status"`      //add
+	UpdateTime     int64  `json:"update_time"`
+	MerchantRoleId int    `json:"role_id"` //add
+	LastLoginIp    string `json:"last_login_ip"`
+	LastLoginTime  int64  `json:"last_login_time"`
+	ParentId       int    `json:"parent_id"`
+	Salt           string `json:"salt"`     //add
+	Password       string `json:"password"` //add
+}
+
+//modify
+type ModifyEmployee struct {
+	Id             int    `json:"uid"`
+	TrueName       string `json:"true_name"`
+	UserName       string `json:"user_name"`
+	LoginIp        string `json:"login_ip"`
+	Status         int    `json:"status"`
+	MerchantRoleId int    `json:"role_id"`
+	Password       string `json:"password"`
+	Salt           string `json:"salt"`
+	UpdateTime     int64  `json:"update_time"`
+}
+
+
+// like: SELECT ma.id,ma.user_name,ma.login_ip,ma.last_login_time,ma.status,mar.role_name FROM merchant_admin AS ma RIGHT JOIN merchant_admin_role AS mar ON ma.merchant_role_id = mar.id WHERE ma.merchant_id = 1;
+func QueryEmployeeInfo(db *gorm.DB, mid int, req *QueryEmployee) ([]QueryEmployee, error) {
+	whereStr := "ma.merchant_id = ? "
+	cond := make([]interface{}, 1)
+	cond[0] = mid
+	if req.UserName != "" {
+		whereStr += " AND ma.user_name = ?"
+		cond = append(cond, req.UserName)
+	}
+
+	//待明确
+	if req.Status != 0 {
+		whereStr += " AND ma.status = ?"
+		cond = append(cond, req.Status)
+	}
+
+	var qeList []QueryEmployee
+	if err := db.Table(`merchant_admin AS ma`).Joins(`
+		RIGHT JOIN merchant_admin_role AS mar ON ma.merchant_role_id = mar.id
+	`).Select(`
+		ma.id,ma.user_name,ma.true_name,ma.login_ip,ma.last_login_time,ma.status,ma.merchant_role_id,mar.role_name
+	`).Where(whereStr, cond...).Find(&qeList).Error; err != nil {
+		if err == gorm.ErrRecordNotFound {
+			return nil, nil
+		}
+		return nil, err
+	}
+
+	return qeList, nil
+}
+
+func AddEmployeeInfo(db *gorm.DB, mid int, req *FullEmployee) error {
+	req.MerchantId = mid
+	req.CreateTime = time.Now().Unix()
+	req.Salt = salt()
+
+	if err := db.Table(`merchant_admin`).Create(req).Error; err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func DelEmployeeInfo(db *gorm.DB, mid int, uid int) error {
+	if err := db.Table(`merchant_admin`).Where(`merchant_id = ? AND id = ? `, mid, uid).Delete(FullEmployee{}).Error; err != nil {
+		return err
+	}
+
+	return nil
+}
+
+
+func ModifyEmployeeInfo(db *gorm.DB, mid int, req *ModifyEmployee) error {
+	fields := map[string]interface{}{
+		"user_name":   req.UserName,
+		"true_name":   req.TrueName,
+		"status":      req.Status,
+		"update_time": time.Now().Unix(),
+		"password":    req.Password,
+		"salt":        salt(),
+	}
+	if err := db.Table(`merchant_admin`).Where(`merchant_id = ? AND id = ? `, mid, req.Id).Updates(fields).Error; err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func salt() string {
+	return "testSaltStr"
+}
+
+
+

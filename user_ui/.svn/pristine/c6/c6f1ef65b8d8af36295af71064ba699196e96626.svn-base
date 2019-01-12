@@ -1,0 +1,245 @@
+package allbet
+
+import (
+	"encoding/json"
+	"fmt"
+	"game2/lib/utils"
+	"math/rand"
+	"net/http"
+	"strconv"
+
+	"github.com/gin-gonic/gin"
+)
+
+const (
+	ALLBET_DES_KEY     = "f0Q2638+aVam6t0+YXaAtwamFNXPME5V"
+	ALLBET_MD5_KEY     = "pRyd5cngzAja4LMdzUeELeX2yqIs/V1DwHPwNuobAug="
+	ALLBET_PROPERTY_ID = "2143220"
+	ALLBET_API_URL     = "https://api3.apidemo.net:8443/"
+	ALLBET_AGENT_NAME  = "3iwmaa"
+	PPP_API_URL        = "https://www.apidemo.net:8443/ams/"
+	USER_PASSWORD      = "123456"
+	USER_PREFIX        = "jkg_"
+	LOGIN_RETURN_URL   = "http://api.jkgsoft.com/game/allbet"
+)
+
+var error_code map[string]string = map[string]string{"OK": "ok", "INTERNAL_ERROR": "internet error",
+	"ILLEGAL_ARGUMENT": "illegal argument", "SYSTEM_MATAINING": "system mataining",
+	"AGENT_NOT_EXIST": "agent not exist", "CLIENT_EXIST": "client exist", "CLIENT_PASSWORD_INCORRECT": "client password incorrect",
+	"TOO_FREQUENT_REQUEST": "too frequent request", "CLIENT_NOT_EXIST": "client not exist", "TRANS_EXISTED": "trans existed",
+	"LACK_OF_MONEY": "lack of money", "DUPLICATE_CONFIRM": "duplicate confirm", "TRANS_NOT_EXIST": "trans not exist",
+	"DECRYPTION_FAILURE": "decryption failure", "FORBIDDEN": "forbidden", "INCONSISTENT_WITH_PRE_TRANS": "inconsistent with pre tans",
+	"INVALID_PROPERTYID": "invalid propertyid", "INVALID_SIGN": "invalid sign", "TRANS_FAILURE": "trans failure"}
+
+var lang_map map[string]string = map[string]string{"cn": "zh_CN"}
+
+func do_request(api_url string, data map[string]string) map[string]interface{} {
+	crypted, sign := utils.AbDesSign(data, ALLBET_DES_KEY, ALLBET_MD5_KEY)
+	post := map[string]string{}
+	post["data"] = crypted
+	post["sign"] = sign
+	post["propertyId"] = ALLBET_PROPERTY_ID
+	str := utils.HttpPost(ALLBET_API_URL+api_url, post)
+	m := make(map[string]interface{})
+	json.Unmarshal([]byte(str), &m)
+	return m
+}
+
+//获取代理商盘口信息
+func Query_agent_handicaps(c *gin.Context) {
+	random_str := strconv.Itoa(rand.Intn(1000))
+	fmt.Println(random_str)
+	data := map[string]string{"agent": ALLBET_AGENT_NAME, "random": "606599269"}
+	str := do_request("/query_agent_handicaps", data)
+	fmt.Println(str)
+}
+
+func create(info map[string]string) map[string]interface{} {
+	res := gin.H{"code": 0, "data": nil, "msg": "fail"}
+	random_str := strconv.Itoa(rand.Intn(1000))
+	data := map[string]string{}
+	data["agent"] = ALLBET_AGENT_NAME
+	data["random"] = random_str
+	data["client"] = USER_PREFIX + info["user_name"]
+	data["nickName"] = USER_PREFIX + info["user_name"]
+	data["password"] = USER_PASSWORD
+	data["vipHandicaps"] = "12"
+	data["orHandicaps"] = "1"
+	data["orHallRebate"] = "0"
+	map_res := do_request("/check_or_create", data)
+	if map_res["error_code"] != "OK" {
+		res["msg"] = map_res["error_code"]
+	} else {
+		res["code"] = 1
+		res["msg"] = "ok"
+	}
+	return res
+}
+
+//注册
+func Check_or_create(c *gin.Context, info map[string]string) {
+	res := create(info)
+	c.JSON(http.StatusOK, res)
+}
+
+//登录
+func login(info map[string]string) map[string]interface{} {
+	res := gin.H{"code": 0, "data": nil, "msg": "fail"}
+	random_str := strconv.Itoa(rand.Intn(1000))
+	data := map[string]string{}
+	data["random"] = random_str
+	data["password"] = USER_PASSWORD
+	data["client"] = USER_PREFIX + info["user_name"]
+	data["language"] = lang_map[info["lang"]]
+	data["returnUrl"] = LOGIN_RETURN_URL
+	map_res := do_request("/forward_game", data)
+	//fmt.Println(map_res)
+	if map_res["error_code"] != "OK" {
+		if map_res["error_code"] == "CLIENT_NOT_EXIST" {
+			//客户端不存在，走注册流程
+			create_res := create(info)
+			if create_res["code"] == 1 { //注册成功
+				//登录
+				return login(info)
+			} else {
+				res["msg"] = create_res["msg"]
+			}
+		} else {
+			res["msg"] = map_res["error_code"]
+		}
+	} else {
+		res["code"] = 1
+		login_info := map[string]interface{}{}
+		login_info["url"] = map_res["gameLoginUrl"]
+		res["data"] = login_info
+		res["msg"] = "ok"
+	}
+	return res
+}
+
+//登录
+func Forward_game(c *gin.Context, info map[string]string) {
+	res := login(info)
+	c.JSON(http.StatusOK, res)
+}
+
+//退出游戏
+func Logout_game(c *gin.Context) {
+	random_str := strconv.Itoa(rand.Intn(1000))
+	data := map[string]string{}
+	data["random"] = random_str
+	data["client"] = "jkg_liul"
+	str := do_request("/logout_game", data)
+	fmt.Println(str)
+}
+
+//获取余额
+func Get_balance(info map[string]string) map[string]interface{} {
+	res := gin.H{"code": 0, "data": nil, "msg": "fail"}
+	random_str := strconv.Itoa(rand.Intn(1000))
+	data := map[string]string{}
+	data["random"] = random_str
+	data["client"] = USER_PREFIX + info["user_name"]
+	data["password"] = USER_PASSWORD
+	map_res := do_request("/get_balance", data)
+	if map_res["error_code"] != "OK" {
+		res["msg"] = map_res["error_code"]
+	} else {
+		res["code"] = 1
+		data_info := map[string]interface{}{}
+		data_info["balance"] = map_res["balance"]
+		res["data"] = data_info
+		res["msg"] = "ok"
+	}
+	return res
+}
+
+//转账
+func Agent_client_transfer(info map[string]string) map[string]interface{} {
+	res := gin.H{"code": 0, "data": nil, "msg": "fail"}
+	random_str := strconv.Itoa(rand.Intn(1000))
+	data := map[string]string{}
+	data["random"] = random_str
+	data["agent"] = ALLBET_AGENT_NAME
+	data["sn"] = utils.AbOrderSn(ALLBET_PROPERTY_ID)
+	data["client"] = USER_PREFIX + info["user_name"]
+	data["operFlag"] = info["operFlag"] //"0"(提取)或者"1"(存入)
+	data["credit"] = info["amount"]
+	map_res := do_request("/agent_client_transfer", data)
+	if map_res["error_code"] != "OK" {
+		res["msg"] = map_res["error_code"]
+	} else {
+		res["code"] = 1
+		res["msg"] = "ok"
+	}
+	return res
+}
+
+//维护状态设置
+func Maintain_state_setting(c *gin.Context) {
+	flag := "1"
+	random_str := strconv.Itoa(rand.Intn(1000))
+	data := map[string]string{}
+	data["random"] = random_str
+	data["state"] = flag
+	str := do_request("/maintain_state_setting", data)
+	fmt.Println(str)
+}
+
+//历史30天内投注记录
+func Betlog_pieceof_histories_in30days(c *gin.Context) {
+	random_str := strconv.Itoa(rand.Intn(1000))
+	data := map[string]string{}
+	data["random"] = random_str
+	data["startTime"] = "2018-10-29 16:00:00"
+	data["endTime"] = "2018-10-29 16:30:00"
+	//data["agent"] = ALLBET_AGENT_NAME
+	str := do_request("/betlog_pieceof_histories_in30days", data)
+	fmt.Println(str)
+	c.JSON(http.StatusOK, str)
+}
+
+//客户历史输赢查询
+func Client_history_surplus(c *gin.Context) {
+	random_str := strconv.Itoa(rand.Intn(1000))
+	data := map[string]string{}
+	data["random"] = random_str
+	data["client"] = "jkg_liul"
+	data["operationType"] = "1"
+	str := do_request("/client_history_surplus", data)
+	fmt.Println(str)
+}
+
+func Forward_egame(c *gin.Context, info map[string]string) {
+	res := gin.H{"code": 0, "data": nil, "msg": "fail"}
+	random_str := strconv.Itoa(rand.Intn(1000))
+	data := map[string]string{}
+	data["random"] = random_str
+	data["client"] = USER_PREFIX + info["user_name"]
+	data["password"] = USER_PASSWORD
+	data["egameType"] = "af"
+	data["gameType"] = "1100"
+	map_res := do_request("/forward_egame", data)
+	if map_res["error_code"] != "OK" {
+		res["msg"] = map_res["error_code"]
+	} else {
+		res["code"] = 1
+		login_info := map[string]interface{}{}
+		login_info["url"] = map_res["gameLoginUrl"]
+		res["data"] = login_info
+		res["msg"] = "ok"
+	}
+}
+
+func Egame_betlog_histories(c *gin.Context) {
+	random_str := strconv.Itoa(rand.Intn(1000))
+	data := map[string]string{}
+	data["random"] = random_str
+	data["egameType"] = "af"
+	data["startTime"] = "2018-10-29 16:30:00"
+	data["endTime"] = "2018-10-29 17:30:00"
+	data["pageIndex"] = "1"
+	data["pageSize"] = "1000"
+	str := do_request("/egame_betlog_histories", data)
+	fmt.Println(str)
+}

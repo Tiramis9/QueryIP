@@ -1,0 +1,180 @@
+package bbin
+
+import (
+	"encoding/base64"
+	"encoding/json"
+	"fmt"
+	"game2/lib/encrypt/aescypto"
+	"game2/lib/utils"
+	"github.com/sirupsen/logrus"
+	"net/url"
+	"time"
+)
+//用户名只能为英文字母和数字
+const (
+	VR_KEY             = "Z6PBZHVN20060JV6F42V08VV06462088"
+	VR_VERSION         = "1.0"
+	VR_ID              = "JKYL"
+	VR_APIURl          = "https://fykj.vrbetapi.com"
+	USER_PREFIX       = "jkgvr"
+	LOGIN_RETURN_URL  = "http://api.jkgsoft.com/game/allbet"
+)
+
+var errorCode map[string]string = map[string]string{"OK": "ok", "INTERNAL_ERROR": "internet error",
+	"ILLEGAL_ARGUMENT": "illegal argument", "SYSTEM_MATAINING": "system mataining",
+	"AGENT_NOT_EXIST": "agent not exist", "CLIENT_EXIST": "client exist", "CLIENT_PASSWORD_INCORRECT": "client password incorrect",
+	"TOO_FREQUENT_REQUEST": "too frequent request", "CLIENT_NOT_EXIST": "client not exist", "TRANS_EXISTED": "trans existed",
+	"LACK_OF_MONEY": "lack of money", "DUPLICATE_CONFIRM": "duplicate confirm", "TRANS_NOT_EXIST": "trans not exist",
+	"DECRYPTION_FAILURE": "decryption failure", "FORBIDDEN": "forbidden", "INCONSISTENT_WITH_PRE_TRANS": "inconsistent with pre tans",
+	"INVALID_PROPERTYID": "invalid propertyid", "INVALID_SIGN": "invalid sign", "TRANS_FAILURE": "trans failure"}
+
+var langMap map[string]string = map[string]string{"cn": "zh_CN"}
+
+func doRequestPost(apiUrl string, data map[string]interface{}) (map[string]interface{},error) {
+	reqUrl := VR_APIURl + apiUrl
+	jsonData,err := json.Marshal(data)
+	if err!=nil{
+		return nil, err
+	}
+	pt := []byte(jsonData)
+	key := []byte(VR_KEY)
+	res,err := aescrypto.AesEcbPkcs5Encrypt(pt, key)
+	if err!=nil{
+		fmt.Println(err)
+		return nil,err
+	}
+	strData := base64.StdEncoding.EncodeToString(res)
+	post := make(map[string]string)
+	post["version"] = VR_VERSION
+	post["id"] = VR_ID
+	post["data"] = strData
+	fmt.Println(post)
+	body := utils.HttpPostProxy(reqUrl, post)
+	fmt.Println("body:",body)
+	strBody,err := base64.StdEncoding.DecodeString(body)
+	if err!=nil{
+		fmt.Println(err)
+		return nil,err
+	}
+	bodyByte,err:=aescrypto.AesEcbPkcs5Decrypt(strBody,key)
+	m := make(map[string]interface{})
+	json.Unmarshal(bodyByte, &m)
+	return m,nil
+}
+
+func doRequestGet(apiUrl string, str string) map[string]interface{} {
+	reqUrl := VR_APIURl + apiUrl
+	version := VR_VERSION
+	id := VR_ID
+	pt := []byte(str)
+	key := []byte(VR_KEY)
+	res,err := aescrypto.AesEcbPkcs5Encrypt(pt, key)
+	if err!=nil{
+		fmt.Println(err)
+	}
+	data := base64.StdEncoding.EncodeToString(res)
+	data = url.QueryEscape(data)
+	apiUrl = reqUrl + "version=" + version + "&id=" + id + "&data=" + data
+	fmt.Println(apiUrl)
+	body, err := utils.HttpGet(apiUrl)
+	if err != nil {
+		logrus.Error(err)
+		return nil
+	}
+	fmt.Println(body)
+	return nil
+}
+
+//登录
+func Login(info map[string]interface{}) (interface{},error) {
+	var str string
+	data := map[string]string{}
+	data["playerName"] = USER_PREFIX + info["user_name"].(string)
+	data["loginTime"] = time.Now().Format("2006-01-02") + "T" + time.Now().Format("15:04:05") + "Z"
+	data["departureUrl"] = LOGIN_RETURN_URL
+	for key, value := range data {
+		str += key + "=" + value + "&"
+	}
+	str = str[0 : len(str)-1]
+	fmt.Println(str)
+	//str = "playerName=test&loginTime=2016-10-12T10:03:13Z&playerOdds=1960&channelId=1"
+	mapRes := doRequestGet("/Account/LoginValidate?", str)
+	fmt.Println(mapRes)
+	return nil, nil
+}
+
+//注册账号
+func Register(info map[string]interface{})(interface{},error){
+	data := make(map[string]interface{})
+	data["playerName"] = USER_PREFIX + info["user_name"].(string)
+	mapRes,err := doRequestPost("/Account/CreateUser", data)
+	if err!=nil{
+		return nil,err
+	}
+	fmt.Println(mapRes)
+	return true,nil
+}
+
+//获取余额
+func GetBalance(info map[string]interface{}) (interface{},error) {
+	data := make(map[string]interface{})
+	data["playerName"] = USER_PREFIX + info["user_name"].(string)
+	mapRes,err := doRequestPost("/UserWallet/Balance", data)
+	if err!=nil{
+		return nil,err
+	}
+	fmt.Println(mapRes)
+	return true,nil
+}
+
+//游戏转至中心账户
+func Game2AccountTransfer(info map[string]interface{}) (interface{},error){
+	data := make(map[string]interface{})
+	data["serialNumber"] = utils.CreateOrderNo(info["id"].(int))
+	data["playerName"] = USER_PREFIX + info["user_name"].(string)
+	data["type"] = 0
+	data["amount"] = info["amount"].(float64)
+	data["createTime"] = time.Now().Format("2006-01-02") + "T" + time.Now().Format("15:04:05") + "Z"
+	fmt.Println(data)
+	mapRes,err := doRequestPost("/UserWallet/Transaction", data)
+	if err!=nil{
+		return nil,err
+	}
+	fmt.Println(mapRes)
+	return true,nil
+}
+
+//中心账户转至游戏
+func Account2GameTransfer(info map[string]interface{}) (interface{},error){
+	data := make(map[string]interface{})
+	data["serialNumber"] = utils.CreateOrderNo(info["id"].(int))
+	data["playerName"] = USER_PREFIX + info["user_name"].(string)
+	data["type"] = 1
+	data["amount"] = info["amount"].(float64)
+	data["createTime"] = time.Now().Format("2006-01-02") + "T" + time.Now().Format("15:04:05") + "Z"
+	fmt.Println(data)
+	mapRes,err := doRequestPost("/UserWallet/Transaction", data)
+	if err!=nil{
+		return nil,err
+	}
+	fmt.Println(mapRes)
+	return true,nil
+}
+
+//查询记录
+func QueryRecords(info map[string]interface{}) (interface{},error){
+	data := make(map[string]interface{})
+	data["startTime"] = info["start_time"].(string) // string
+	data["endTime"] = info["end_time"].(string) //string
+	data["channelId"] = -1
+	data["state"] = -1
+	data["recordPage"] = info["page"].(int) //int
+	data["recordPage"] = info["page_count"].(int) //int
+	fmt.Println(data)
+	mapRes,err := doRequestPost("/MerchantQuery/Bet", data)
+	if err!=nil{
+		return nil,err
+	}
+	fmt.Println(mapRes)
+	return true,nil
+}

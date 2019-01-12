@@ -1,0 +1,34 @@
+package mg
+
+import (
+	"game2/lib/game"
+	"testing"
+)
+
+func TestGameMG_DoLogin(t *testing.T) {
+	//mg, _ := game.NewGame("mg")
+	m := make(map[string]interface{})
+	m["time_zone"] = "UTC+8"
+	m["currency"] = "CNY"
+	m["language"] = "zh"
+	resp, err := DoLogin(m)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	t.Logf("%#v", resp)
+}
+
+//注册
+func TestGameMGRegister(t *testing.T) {
+	s, _ := game.NewGame("mg")
+	m := make(map[string]interface{})
+	m["username"] = "test"
+	m["moneysort"] = "RMB"
+	resp, err := s.Register(m)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	t.Logf("%#v", resp)
+}

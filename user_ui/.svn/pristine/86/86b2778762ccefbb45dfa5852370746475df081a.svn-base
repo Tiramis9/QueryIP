@@ -1,0 +1,189 @@
+package vr
+
+import (
+	"encoding/base64"
+	"encoding/json"
+	"fmt"
+	"game2/lib/encrypt/aescypto"
+	"game2/lib/game"
+	"game2/lib/utils"
+	"net/url"
+	"time"
+)
+
+//用户名只能为英文字母和数字
+const (
+	Key            = "Z6PBZHVN20060JV6F42V08VV06462088"
+	Version        = "1.0"
+	Id             = "JKYL"
+	ApiUrl         = "https://fykj.vrbetapi.com"
+	UserPrefix     = "jkgvr"
+	LoginReturnUrl = "http://api.jkgsoft.com/game/allbet"
+)
+
+type GameVr struct {
+}
+
+//var langMap map[string]string = map[string]string{"cn": "zh_CN"}
+
+func doRequestPost(apiUrl string, data map[string]interface{}) (map[string]interface{}, error) {
+	reqUrl := ApiUrl + apiUrl
+	jsonData, err := json.Marshal(data)
+	if err != nil {
+		return nil, err
+	}
+	pt := []byte(jsonData)
+	key := []byte(Key)
+	res, err := aescrypto.AesEcbPkcs5Encrypt(pt, key)
+	if err != nil {
+		fmt.Println(err)
+		return nil, err
+	}
+	strData := base64.StdEncoding.EncodeToString(res)
+	post := make(map[string]string)
+	post["version"] = Version
+	post["id"] = Id
+	post["data"] = strData
+	fmt.Println(post)
+	body, err := utils.HttpPostProxy(reqUrl, post)
+	fmt.Println("body:", body)
+	strBody, err := base64.StdEncoding.DecodeString(string(body))
+	if err != nil {
+		fmt.Println(err)
+		return nil, err
+	}
+	bodyByte, err := aescrypto.AesEcbPkcs5Decrypt(strBody, key)
+	m := make(map[string]interface{})
+	json.Unmarshal(bodyByte, &m)
+	return m, nil
+}
+
+func getLoginUrl(apiUrl string, str string) (string, error) {
+	var iStr string
+	reqUrl := ApiUrl + apiUrl
+	version := Version
+	id := Id
+	pt := []byte(str)
+	key := []byte(Key)
+	res, err := aescrypto.AesEcbPkcs5Encrypt(pt, key)
+	if err != nil {
+		return iStr, err
+	}
+	data := base64.StdEncoding.EncodeToString(res)
+	data = url.QueryEscape(data)
+	apiUrl = reqUrl + "version=" + version + "&id=" + id + "&data=" + data
+	return apiUrl, nil
+}
+
+//登录
+func (g *GameVr) Login(info map[string]interface{}) (interface{}, error) {
+	var str string
+	if !info["registered"].(bool){
+		rs, err:=g.Register(info)
+		if err!=nil{
+			return str,err
+		}
+		fmt.Print(rs)
+	}
+	data := map[string]string{}
+	data["playerName"] = info["game_user_name"].(string)
+	data["loginTime"] = time.Now().Format("2006-01-02") + "T" + time.Now().Format("15:04:05") + "Z"
+	data["departureUrl"] = LoginReturnUrl
+	for key, value := range data {
+		str += key + "=" + value + "&"
+	}
+	str = str[0 : len(str)-1]
+	url, err := getLoginUrl("/Account/LoginValidate?", str)
+	if err != nil {
+		return nil, err
+	}
+	return url, nil
+}
+
+//注册账号
+func (g *GameVr) Register(info map[string]interface{}) (interface{}, error) {
+	data := make(map[string]interface{})
+	data["playerName"] = info["game_user_name"].(string)
+	mapRes, err := doRequestPost("/Account/CreateUser", data)
+	if err != nil {
+		return nil, err
+	}
+	fmt.Println(mapRes)
+	return true, nil
+}
+
+//获取余额
+func (g *GameVr) GetBalance(info map[string]interface{}) (interface{}, error) {
+	data := make(map[string]interface{})
+	data["playerName"] = info["game_user_name"].(string)
+	mapRes, err := doRequestPost("/UserWallet/Balance", data)
+	if err != nil {
+		return nil, err
+	}
+	fmt.Println(mapRes)
+	return true, nil
+}
+
+//游戏转至中心账户
+func (g *GameVr) Game2AccountTransfer(info map[string]interface{}) (interface{}, error) {
+	data := make(map[string]interface{})
+	data["serialNumber"] = utils.CreateOrderNo(info["id"].(int))
+	data["playerName"] = info["game_user_name"].(string)
+	data["type"] = 0
+	data["amount"] = info["amount"].(float64)
+	data["createTime"] = time.Now().Format("2006-01-02") + "T" + time.Now().Format("15:04:05") + "Z"
+	fmt.Println(data)
+	mapRes, err := doRequestPost("/UserWallet/Transaction", data)
+	if err != nil {
+		return nil, err
+	}
+	fmt.Println(mapRes)
+	return true, nil
+}
+
+//中心账户转至游戏
+func (g *GameVr) Account2GameTransfer(info map[string]interface{}) (interface{}, error) {
+	data := make(map[string]interface{})
+	data["serialNumber"] = utils.CreateOrderNo(info["id"].(int))
+	data["playerName"] = info["game_user_name"].(string)
+	data["type"] = 1
+	data["amount"] = info["amount"].(float64)
+	data["createTime"] = time.Now().Format("2006-01-02") + "T" + time.Now().Format("15:04:05") + "Z"
+	fmt.Println(data)
+	mapRes, err := doRequestPost("/UserWallet/Transaction", data)
+	if err != nil {
+		return nil, err
+	}
+	fmt.Println(mapRes)
+	return true, nil
+}
+
+//查询记录
+func (g *GameVr) QueryRecord(info map[string]interface{}) (interface{}, error) {
+	data := make(map[string]interface{})
+	data["startTime"] = info["start_time"].(string) // string
+	data["endTime"] = info["end_time"].(string)     //string
+	data["channelId"] = -1
+	data["state"] = -1
+	data["recordPage"] = info["page"].(int)       //int
+	data["recordPage"] = info["page_count"].(int) //int
+	fmt.Println(data)
+	mapRes, err := doRequestPost("/MerchantQuery/Bet", data)
+	if err != nil {
+		return nil, err
+	}
+	fmt.Println(mapRes)
+	return true, nil
+}
+
+func (g *GameVr) GetPrefix() string {
+	return UserPrefix
+}
+
+func NewVrGame() game.Game {
+	return &GameVr{}
+}
+
+func init() {
+	game.Register("vr", NewVrGame)
+}

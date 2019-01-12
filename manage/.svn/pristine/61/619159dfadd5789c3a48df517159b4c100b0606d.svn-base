@@ -1,0 +1,29 @@
+package model
+
+//位置：merchant_website
+type MemberRegistration struct {
+	RegEmail            int `json:"reg_email"`
+	RegPayPass          int `json:"reg_pay_pass"`
+	RegPhone            int `json:"reg_phone"`
+	RegSecurityQuestion int `json:"reg_security_question"`
+	RegTrueName         int `json:"reg_true_name"`
+}
+
+func QueryMemberRegistration(mid int) (*MemberRegistration, error) {
+	var mr MemberRegistration
+	if err := Db.Table("merchant_website").Where("merchant_id = ?", mid).Find(&mr).Error; err != nil {
+		return nil, err
+	}
+
+	return &mr, nil
+}
+
+func ModifyMemberRegistration(req *MemberRegistration, mid int) error {
+	// fields := map[string] interface{} {
+	// 	""
+	// }
+	if err := Db.Table("merchant_website").Where("merchant_id = ?", mid).Updates(*req).Error; err != nil {
+		return err
+	}
+	return nil
+}

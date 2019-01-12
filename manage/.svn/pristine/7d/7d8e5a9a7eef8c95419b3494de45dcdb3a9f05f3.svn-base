@@ -1,0 +1,114 @@
+package action
+
+import (
+	"golang_game_merchant/global/status"
+	"golang_game_merchant/model"
+	"net/http"
+	"time"
+)
+
+import (
+	"github.com/gin-gonic/gin"
+)
+
+type AgentBrokerageReq struct {
+	Id             int     `json:"id" binding:"required"`
+	BrokerageTotal float64 `json:"brokerage_total"`
+	OrgExpense     float64 `json:"org_expense"`
+}
+
+//代理报表查询Req
+type AgentReportListReq struct {
+	UserName  string `json:"user_name"`
+	Page      int    `json:"page"`
+	PageCount int    `json:"page_count"`
+	StartTime int    `json:"start_time"`
+	EndTime   int    `json:"end_time"`
+}
+
+type AgentReportListResp struct {
+	List  []model.AgentBrokerageReport `json:"list"`
+	Total int                          `json:"total"`
+}
+
+//代理报表列表(指单个人的代理报表)
+func AgentReportList(c *gin.Context) {
+	data := [...]map[string]interface{}{
+		{"id": 1, "user_name": "aaabc", "total_bet": 2000, "win_lost_amount": 987, "recharge_amount": 954616, "withdraw_amount": 4897, "bonus_amount": 2000, "rebate": 15, "fee": 6},
+		{"id": 2, "user_name": "cccdf", "total_bet": 2000, "win_lost_amount": 987, "recharge_amount": 954616, "withdraw_amount": 4897, "bonus_amount": 2000, "rebate": 15, "fee": 6},
+	}
+	res := gin.H{"code": 1, "data": data, "msg": "ok", "total": 10, "next_page": 2}
+	c.JSON(http.StatusOK, res)
+}
+
+//佣金报表列表
+func BrokerageReport(c *gin.Context) {
+	data := [...]map[string]interface{}{
+		{"id": 1, "user_name": "aaabc", "total_bet": 2000, "win_lost_amount": 987, "recharge_amount": 954616, "withdraw_amount": 4897, "bonus_amount": 2000, "rebate": 15, "fee": 6},
+		{"id": 2, "user_name": "cccdf", "total_bet": 2000, "win_lost_amount": 987, "recharge_amount": 954616, "withdraw_amount": 4897, "bonus_amount": 2000, "rebate": 15, "fee": 6},
+	}
+	res := gin.H{"code": 1, "data": data, "msg": "ok", "total": 10, "next_page": 2}
+	c.JSON(http.StatusOK, res)
+}
+
+//子用户列表
+func SubordinateList(c *gin.Context) {
+	data := [...]map[string]interface{}{
+		{"id": 1, "user_name": "aaabc", "last_login_time": 1539601066, "reg_time": 1539601066, "device": 1, "source": "http://www.jx550.com/preferential.html", "status": 1},
+		{"id": 2, "user_name": "dddfs", "last_login_time": 1539601066, "reg_time": 1539601066, "device": 1, "source": "http://www.jx550.com/preferential.html", "status": 1},
+	}
+	res := gin.H{"code": 1, "data": data, "msg": "ok", "total": 10, "next_page": 2}
+	c.JSON(http.StatusOK, res)
+}
+
+//代理佣金历史报表
+func BrokerageHistory(c *gin.Context) {
+	var data AgentReportListResp
+	var arlReq AgentReportListReq
+	c.BindJSON(&arlReq)
+	merchantId := 1
+	where := make(map[string]interface{})
+	if arlReq.UserName != "" {
+		where["user_name"] = arlReq.UserName
+	}
+	if arlReq.StartTime != 0 {
+		where["start_time"] = arlReq.StartTime
+	}
+	if arlReq.EndTime != 0 {
+		where["end_time"] = arlReq.EndTime
+	}
+	page, pageCount := InitPage(arlReq.Page, arlReq.PageCount)
+	list, err := model.GetAgentBrokerageReportList(model.Db, merchantId, where, page, pageCount)
+	if err != nil {
+		RespServerErr(c)
+		return
+	}
+	data.List = list
+	total, err := model.GetAgentBrokerageReportCount(model.Db, merchantId, where)
+	if err != nil {
+		RespServerErr(c)
+		return
+	}
+	data.Total = total
+	RespJson(c, status.OK, data)
+}
+
+//确定返佣
+func BrokerageEdit(c *gin.Context) {
+	var abReq AgentBrokerageReq
+	var abReport model.AgentBrokerageReport
+	c.BindJSON(&abReq)
+	merchantId := 1
+	fields := make(map[string]interface{})
+	timestamp := time.Now().Unix()
+	abReport.Id = abReq.Id
+	fields["deal_time"], fields["update_time"] = timestamp, timestamp
+	fields["org_expense"] = abReq.OrgExpense
+	fields["brokerage_total"] = abReq.BrokerageTotal
+	_, err := abReport.UpdateAgentBrokerageReport(model.Db, merchantId, fields)
+	if err != nil {
+		RespServerErr(c)
+		return
+	}
+	RespSuccess(c)
+}

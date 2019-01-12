@@ -1,0 +1,96 @@
+package model
+
+import (
+	"errors"
+	"strings"
+
+	"github.com/sirupsen/logrus"
+)
+
+type OperationLogReq struct {
+	UserName  string `json:"user_name"`
+	MainMenu  string `json:"main_menu"`
+	SubMenu   string `json:"sub_menu"`
+	StartTime int    `json:"start_time"`
+	EndTime   int    `json:"end_time"`
+	Page      int    `json:"page"`
+	PageCount int    `json:"page_count"`
+}
+
+type operationLog struct {
+	UserName   string `json:"user_name"` //本字段在merchant_admin表，其他字段在merchant_admin_log表
+	MainMenu   string `json:"main_menu"`
+	SubMenu    string `json:"sub_menu"`
+	Content    string `json:"content"`
+	CreateTime int64  `json:"create_time"`
+	OperatorId int    `json:"id"`
+	Ip         string `json:"ip"`
+}
+
+func (req *OperationLogReq) ConstructWhere(id int) ([]string, []interface{}, error) {
+	whereStr := make([]string, 1)
+	cond := make([]interface{}, 1)
+	whereStr[0] = " mal.operator_id = ? "
+	cond[0] = id
+
+	if req.UserName != "" {
+		whereStr = append(whereStr, " ma.user_name = ? ")
+		cond = append(cond, req.UserName)
+	}
+
+	if req.MainMenu != "" {
+		whereStr = append(whereStr, " mal.main_menu = ? ")
+		cond = append(cond, req.MainMenu)
+	}
+
+	if req.SubMenu != "" {
+		whereStr = append(whereStr, " mal.sub_menu = ? ")
+		cond = append(cond, req.SubMenu)
+	}
+
+	if req.StartTime != 0 {
+		//return nil, nil, errors.New("invalid start_time")
+		if req.EndTime < 0 {
+			return nil, nil, errors.New("invalid end_time")
+		}
+		if req.StartTime >= req.EndTime {
+			return nil, nil, errors.New("start_time > end_time")
+		}
+		whereStr = append(whereStr, " mal.create_time BETWEEN ? AND ? ")
+		cond = append(cond, req.StartTime)
+		cond = append(cond, req.EndTime)
+	}
+	return whereStr, cond, nil
+}
+
+//类似 SELECT mal.main_menu,mal.content ,ma.user_name FROM merchant_admin_log AS al LEFT JOIN merchant_admin AS a ON mal.operator_id = ma.merchant_id where mal.main_menu='admin' AND mal.operator_id = 1;
+func QueryOperationLog(req *OperationLogReq, merchant_id int) ([]operationLog, error) {
+
+	var logs []operationLog
+	whereStr, cond, err := req.ConstructWhere(merchant_id)
+	if err != nil {
+		return nil, err
+	}
+
+	// 可能会修改
+	if req.Page < 1 {
+		req.Page = 1
+	}
+
+	// 可能会修改
+	if req.PageCount < 1 {
+		req.PageCount = 1
+	}
+
+	logrus.Debugf("page:%d pc:%d", req.Page, req.PageCount)
+
+	if err := Db.Debug().Table(`merchant_admin_log AS mal`).Joins(`
+	    LEFT JOIN merchant_admin AS ma ON mal.operator_id = ma.merchant_id
+	`).Select(`
+	mal.main_menu,mal.sub_menu,mal.content,mal.create_time,mal.operator_id,mal.ip,ma.user_name
+    `).Offset((req.Page-1)*req.PageCount).Limit(req.PageCount).Where(strings.Join(whereStr, " AND "), cond...).Find(&logs).Error; err != nil {
+		return nil, err
+	}
+
+	return logs, nil
+}

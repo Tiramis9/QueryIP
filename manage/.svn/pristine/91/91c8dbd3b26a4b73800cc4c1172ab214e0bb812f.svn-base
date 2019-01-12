@@ -1,0 +1,183 @@
+package model
+
+import (
+	"github.com/jinzhu/gorm"
+	"github.com/sirupsen/logrus"
+)
+
+type Agent struct {
+	Id            int    `json:"id"`
+	MerchantId    int    `json:"merchant_id"`
+	UserName      string `json:"user_name"`
+	TrueName      string `json:"true_name"`
+	Phone         string `json:"phone"`
+	Skype         string `json:"skype"`
+	Email         string `json:"email"`
+	Qq            string `json:"qq"`
+	Salt          string `json:"salt"`
+	Status        int    `json:"status"`
+	RegIp         string `json:"reg_ip"`
+	LastLoginTime int    `json:"last_login_time"`
+	LoginIp       string `json:"login_ip"`
+	ApplyMemo     string `json:"apply_memo"`
+	Auditor       string `json:"auditor"`
+	AuditTime     string `json:"audit_time"`
+	Password      string `json:"password"`
+	ClassId       int    `json:"class_id"`
+	UserClassId   int    `json:"user_class_id"`
+}
+
+type AgentList struct {
+	List  []SuAgent `json:"list"`
+	Total int       `json:"total"`
+}
+
+type SuAgent struct {
+	Agent
+	UserCount int    `json:"user_count"`
+	ClassName string `json:"class_name"`
+}
+
+type AgentInfo struct {
+	SuAgent
+	AgentBank
+}
+
+type AgentBank struct {
+	Id         int    `json:"id"`
+	AgentId    int    `json:"agent_id"`
+	TrueName   string `json:"true_name"`
+	CardNo     string `json:"card_no"`
+	BankName   string `json:"bank_name"`
+	BankBranch string `json:"bank_branch"`
+	Status     int    `json:"status"`
+	CreateTime int    `json:"create_time"`
+	UpdateTime int    `json:"update_time"`
+}
+
+/**
+获取代理列表
+*/
+func GetAgentList(db *gorm.DB, merchId int, aType int, where map[string]interface{}, page int, pageCount int) ([]SuAgent, error) {
+	str := "ag.merchant_id=?"
+	var params []interface{}
+	//查询代理
+	if aType == 1 {
+		str += " AND ag.status>=?"
+	}
+	//查询申请代理
+	if aType == 0 {
+		if where["status"] == 0 {
+			str += " AND ag.status<?"
+		} else {
+			str += " AND ag.status=?"
+		}
+	}
+	params = append(params, merchId, where["status"])
+	if where["user_name"] != "" {
+		str += " AND ag.user_name=?"
+		params = append(params, where["user_name"])
+	}
+	var agentList []SuAgent
+	if err := db.Table(`agent AS ag`).Joins(`
+		LEFT JOIN merchant_agent_class AS mac ON ag.class_id=mac.id`).Joins(`
+		LEFT JOIN user AS us ON ag.id=us.parent_id`).Select(`
+		ag.id,ag.user_name,ag.merchant_id,ag.true_name,ag.phone,ag.skype,ag.email,ag.qq,ag.salt,ag.status,ag.reg_ip,ag.last_login_time,`+
+		`ag.login_ip,ag.apply_memo,ag.class_id,ag.auditor,ag.audit_time,mac.class_name,count(us.id) as user_count
+	`).Where(str, params...).Group("ag.id").Offset((page - 1) * pageCount).Limit(pageCount).Find(&agentList).Error; err != nil {
+		if err == gorm.ErrRecordNotFound {
+			return nil, nil
+		}
+		logrus.Error(err)
+		return nil, err
+	}
+	return agentList, nil
+}
+
+/**
+获取代理记录条数
+*/
+func GetAgentCount(db *gorm.DB, merchId int, aType int, where map[string]interface{}) (int, error) {
+	str := "ag.merchant_id=?"
+	var params []interface{}
+	//查询代理
+	if aType == 1 {
+		str += " AND ag.status>=?"
+	}
+	//查询申请代理
+	if aType == 0 {
+		if where["status"] != 0 {
+			str += " AND ag.status=?"
+
+		}else{
+			str += " AND ag.status<?"
+		}
+	}
+	params = append(params, merchId, where["status"])
+	if where["user_name"] != "" {
+		str += " AND ag.user_name=?"
+		params = append(params, where["user_name"])
+	}
+
+	var total int
+	if err := db.Table(`agent AS ag`).Where(str, params...).Count(&total).Error; err != nil {
+		if err == gorm.ErrRecordNotFound {
+			return total, nil
+		}
+		logrus.Error(err)
+		return total, err
+	}
+	return total, nil
+}
+
+/**
+编辑代理信息
+*/
+func UpdateAgent(db *gorm.DB, where map[string]interface{}, fields map[string]interface{}) error {
+	if err := db.Table("agent").Where("id=? AND merchant_id=?", where["id"], where["merchant_id"]).Updates(fields).Error; err != nil {
+		logrus.Error(err)
+		return err
+	}
+	return nil
+}
+
+/**
+查看代理详情
+*/
+func GetAgentInfo(db *gorm.DB, id int, merchId int) (AgentInfo, error) {
+	var agentInfo AgentInfo
+	if err := db.Table("agent").Joins(`
+		LEFT JOIN merchant_agent_class AS mac ON agent.class_id=mac.id`).Joins(`
+		LEFT JOIN user AS us ON agent.id=us.parent_id`).Select(`
+		agent.id,agent.user_name,agent.merchant_id,agent.true_name,agent.phone,agent.skype,agent.email,agent.qq,agent.salt,agent.status,agent.reg_ip,agent.last_login_time,`+
+		`agent.login_ip,agent.apply_memo,agent.class_id,agent.auditor,agent.audit_time,mac.class_name,count(us.id) as user_count
+	`).Where(`agent.id=? AND agent.merchant_id=?`, id, merchId).First(&agentInfo).Error; err != nil {
+		if err == gorm.ErrRecordNotFound {
+			return agentInfo, nil
+		}
+		logrus.Error(err)
+		return agentInfo, err
+	}
+	var agentBank AgentBank
+	if err := db.Debug().Table("agent_bank").Select("id,true_name,card_no,bank_name,bank_branch,status").Where("agent_id=?", id).First(&agentBank).Error; err != nil {
+		if err == gorm.ErrRecordNotFound {
+			return agentInfo, nil
+		}
+		logrus.Error(err)
+		return agentInfo, err
+	}
+	agentInfo.AgentBank = agentBank
+	return agentInfo, nil
+}
+
+func GetAgentInfoSimple(db *gorm.DB, id int, merchId int) (Agent, error) {
+	var agent Agent
+	if err := db.Table("agent").Select("id,salt,password").Where(map[string]interface{}{"id": id, "merchant_id": merchId}).First(&agent).Error; err != nil {
+		if err == gorm.ErrRecordNotFound {
+			return agent, nil
+		}
+		logrus.Error(err)
+		return agent, err
+	}
+	return agent, nil
+}

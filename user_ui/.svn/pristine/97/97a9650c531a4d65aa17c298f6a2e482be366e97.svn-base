@@ -1,0 +1,98 @@
+package model
+
+import "github.com/jinzhu/gorm"
+
+type MerchantWebsite struct {
+	Id                    int     `json:"id"`
+	Merchant_id           int     `json:"merchant_id"`
+	Name                  string  `json:"name,omitempty"`
+	Agent_plat_url        string  `json:"agent_plat_url"`
+	Agent_spread_url      string  `json:"agent_spread_url"`
+	App_download_url      string  `json:"app_download_url"`
+	App_logo              string  `json:"app_logo"`
+	Allow_ip_minute       int     `json:"allow_ip_minute"`
+	Reg_status            int     `json:"reg_status"`
+	Active_status         int     `json:"active_status"`
+	Code                  string  `json:"code,omitempty"`
+	Withdraw_single_min   float64 `json:"withdraw_single_min"`
+	Withdraw_single_max   float64 `json:"withdraw_single_max"`
+	Credit                float64 `json:"credit"`
+	Fs_rate               int     `json:"fs_rate"`
+	Fy_rate               int     `json:"fy_rate"`
+	Agent_email           string  `json:"agent_email"`
+	Service_email         string  `json:"service_email"`
+	Risk_email            string  `json:"risk_email"`
+	Website_phone         string  `json:"website_phone"`
+	Reg_pay_pass          int     `json:"reg_pay_pass"`
+	Reg_security_question int     `json:"reg_security_question"`
+	Reg_true_name         int     `json:"reg_true_name"`
+	Reg_phone             int     `json:"reg_phone"`
+	Reg_email             int     `json:"reg_email"`
+	Appid                 string  `json:"appid"`
+	Secret                string  `json:"secret"`
+	Ip_white              string  `json:"ip_white"`
+	Temp_id               int     `json:"temp_id"`
+	Effect_time           int     `json:"effect_time"`
+	Expire_time           int     `json:"expire_time"`
+}
+
+type MerchantWebsiteInterface interface {
+	GetMerchantWebsiteREG()
+}
+
+func (m MerchantWebsite) GetMerchantWebsiteReg(id int) (merchat_website MerchantWebsite) {
+	/*stmt, errs := Db.Prepare("SELECT id,merchant_id,reg_pay_pass,reg_security_question,reg_true_name,reg_phone,reg_email FROM merchant_website" + " Where merchant_id=?")
+	if errs != nil {
+		fmt.Println(errs)
+		return
+	}
+	defer stmt.Close()
+	row := stmt.QueryRow(id)
+	conv := MerchantWebsite{}
+	row.Scan(&conv.Id, &conv.Merchant_id, &conv.Reg_pay_pass, &conv.Reg_security_question, &conv.Reg_true_name, &conv.Reg_phone, &conv.Reg_email)
+
+	return conv*/
+	return MerchantWebsite{}
+}
+
+func (m MerchantWebsite) GetMerchantWebsiteAppDownload(id int) (merchat_website MerchantWebsite) {
+	/*stmt, errs := Db.Prepare("SELECT id,merchant_id,app_download_url FROM merchant_website" + " Where merchant_id=?")
+	if errs != nil {
+		fmt.Println(errs)
+		return
+	}
+	defer stmt.Close()
+	row := stmt.QueryRow(id)
+	conv := MerchantWebsite{}
+	row.Scan(&conv.Id, &conv.Merchant_id, &conv.App_download_url)
+
+	return conv*//*stmt, errs := Db.Prepare("SELECT id,merchant_id,app_download_url FROM merchant_website" + " Where merchant_id=?")
+	if errs != nil {
+		fmt.Println(errs)
+		return
+	}
+	defer stmt.Close()
+	row := stmt.QueryRow(id)
+	conv := MerchantWebsite{}
+	row.Scan(&conv.Id, &conv.Merchant_id, &conv.App_download_url)
+
+	return conv*/
+	return MerchantWebsite{}
+}
+
+func GetDomainInitInfo(db *gorm.DB, domain string) (*MerchantWebsite, error) {
+	var m MerchantWebsite
+	if err:=db.Table("merchant_domain as md").Joins("LEFT JOIN merchant m ON md.merchant_id=m.id").
+		Joins("LEFT JOIN merchant_website mw ON md.merchant_id=mw.merchant_id").
+		Select("m.id,m.appid,m.secret,md.ip_white,m.effect_time,m.expire_time,mw.name,mw.agent_plat_url,mw.agent_spread_url," +
+			"mw.app_download_url,mw.app_logo,mw.allow_ip_minute,mw.reg_status,mw.active_status,mw.withdraw_single_min," +
+			"mw.withdraw_single_max,mw.fs_rate,mw.fy_rate,mw.agent_email,mw.service_email,mw.risk_email,mw.website_phone," +
+			"mw.reg_pay_pass,mw.reg_security_question,mw.reg_true_name,mw.reg_phone,mw.reg_email").
+		Where("md.domain=?",domain).Find(&m).Error;err!=nil{
+		if err==gorm.ErrRecordNotFound{
+			return nil,nil
+		}
+		return nil,err
+	}
+	return &m,nil
+}

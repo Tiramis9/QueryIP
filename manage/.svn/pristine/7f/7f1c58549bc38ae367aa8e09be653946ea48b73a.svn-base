@@ -1,0 +1,55 @@
+package action
+
+import (
+	"github.com/gin-gonic/gin"
+	"golang_game_merchant/global/status"
+	"golang_game_merchant/model"
+)
+type MerchantAgentClassReq struct {
+	Id  int  `json:"id" binding:"required"`
+}
+
+type MerchantAgentClass struct {
+	Id            int     `json:"id"`
+	ClassName     string  `json:"class_name"`
+}
+
+type MerchantAgentClassListResp struct {
+	List []MerchantAgentClass `json:"list"`
+}
+
+/**
+代理层级列表
+*/
+func AgentClassList(c *gin.Context) {
+	var data MerchantAgentClassListResp
+	merchantId := 1
+	list, err := model.GetMerchantAgentClassList(model.Db, merchantId)
+	if err != nil {
+		RespServerErr(c)
+		return
+	}
+	for i :=range list{
+		temp := MerchantAgentClass{
+			Id :list[i].Id,
+			ClassName:list[i].ClassName,
+		}
+		data.List = append(data.List,temp)
+	}
+	RespJson(c, status.OK, data)
+}
+
+/**
+代理层级详情
+*/
+func AgentClassInfo(c *gin.Context) {
+	var macReq MerchantAgentClassReq
+	c.BindJSON(&macReq)
+	merchantId := 1
+	info, err := model.GetMerchantAgentClassInfo(model.Db, merchantId, macReq.Id)
+	if err != nil {
+		RespServerErr(c)
+		return
+	}
+	RespJson(c, status.OK, info)
+}

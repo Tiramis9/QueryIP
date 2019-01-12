@@ -1,0 +1,218 @@
+package Imone
+
+import (
+	"bytes"
+	"encoding/json"
+	"errors"
+	"io/ioutil"
+	"net/http"
+	"net/url"
+	"strings"
+)
+
+const (
+	PROXYADDR = "http://127.0.0.1:1080"
+)
+
+type (
+	DetailItemsList struct {
+		Market                string  `json:"Market"`
+		EventName             string  `json:"EventName"`
+		EventDateTime         string  `json:"EventDateTime"`
+		CompetitionNamestring string  `json:"CompetitionName"`
+		HomeTeamName          string  `json:"HomeTeamName"`
+		AwayTeamName          string  `json:"AwayTeamName"`
+		FavTeam               string  `json:"FavTeam"`
+		BetType               string  `json:"BetType"`
+		BetTypeDesc           string  `json:"BetTypeDesc"`
+		Period                string  `json:"Period"`
+		Selection             string  `json:"Selection"`
+		Odds                  float64 `json:"Odds"`
+		HomeTeamHTScore       string  `json:"HomeTeamHTScore"`
+		AwayTeamHTScore       string  `json:"AwayTeamHTScore"`
+		HomeTeamFTScore       string  `json:"HomeTeamFTScore"`
+		AwayTeamFTScore       string  `json:"AwayTeamFTScore"`
+		WagerHomeTeamScore    string  `json:"WagerHomeTeamScore"`
+		WagerAwayTeamScore    string  `json:"WagerAwayTeamScore"`
+		Handicap              string  `json:"Handicap"`
+		IsWagerItemCancelled  string  `json:"IsWagerItemCancelled"`
+		SportsName            string  `json:"SportsName"`
+		EventID               string  `json:"EventID"`
+	}
+	ProductWallet struct {
+		Provider              string            `json:"Provider"`
+		GameID                string            `json:"GameID"`
+		BetId                 string            `json:"BetId"`
+		WagerCreationDateTime string            `json:"WagerCreationDateTime"`
+		PlayerId              string            `json:"PlayerId"`
+		Currency              string            `json:"Currency"`
+		StakeAmount           float64           `json:"StakeAmount"`
+		MemberExposure        float64           `json:"MemberExposure"`
+		PayoutAmount          float64           `json:"PayoutAmount"`
+		WinLoss               float64           `json:"WinLoss"`
+		OddsType              string            `json:"OddsType"`
+		WagerType             string            `json:"WagerType"`
+		Platform              string            `json:"Platform"`
+		IsSettled             string            `json:"isSettled"`
+		IsConfirmed           string            `json:"isConfirmed"`
+		IsCancelled           string            `json:"isCancelled"`
+		BetTradeStatus        string            `json:"BetTradeStatus"`
+		BetTradeCommission    float64           `json:"BetTradeCommission"`
+		BetTradeBuybackAmount float64           `json:"BetTradeBuybackAmount"`
+		ComboType             string            `json:"ComboType"`
+		LastUpdatedDate       string            `json:"LastUpdatedDate"`
+		List                  []DetailItemsList `json:"DetailItems"`
+	}
+	//301 ResProductWallet
+	ResProductWallet struct {
+		Code       string          `json:"Code"`
+		Message    string          `json:"Message"`
+		List       []ProductWallet `json:"Result"`
+		Pagination struct {
+			CurrentPage int `json:"CurrentPage"`
+			TotalPage   int `json:"TotalPage"`
+			ItemPerPage int `json:"ItemPerPage"`
+			TotalCount  int `json:"TotalCount"`
+		} `json:"Pagination"`
+	}
+)
+
+// 不走环回地址
+func HttpPostQUERY(urlApi string, data interface{}) ([]byte, error) {
+	client := &http.Client{}
+	buf, err := json.Marshal(data)
+	if err != nil {
+		return nil, err
+	}
+	req, err := http.NewRequest("POST", urlApi, bytes.NewBuffer(buf))
+	if err != nil {
+		return nil, err
+	}
+	req.Header.Set("Content-Type", "application/json")
+	resp, err := client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+	return ioutil.ReadAll(resp.Body)
+}
+
+// 代理本地环回地址
+func HttpPostPROXY(urlApi string, data interface{}) ([]byte, error) {
+	proxy := func(_ *http.Request) (*url.URL, error) {
+		return url.Parse(PROXYADDR)
+	}
+	transport := &http.Transport{Proxy: proxy}
+	client := &http.Client{Transport: transport}
+
+	buf, err := json.Marshal(data)
+	if err != nil {
+		return nil, err
+	}
+	req, err := http.NewRequest("POST", urlApi, bytes.NewBuffer(buf))
+	if err != nil {
+		return nil, err
+	}
+	req.Header.Set("Content-Type", "application/json")
+	resp, err := client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+	return ioutil.ReadAll(resp.Body)
+}
+
+// 检查注册参数容错
+func CheckRegisterParam(req *Reister) (map[string]string, error) {
+	data := make(map[string]string)
+	if req.MerchantCode == "" {
+		return nil, errors.New(REQUSTERROR)
+	}
+	if req.PlayerId == "" {
+		return nil, errors.New(REQUSTERROR)
+	}
+	if req.Password == "" {
+		return nil, errors.New(REQUSTERROR)
+	}
+	if req.Currency == "" {
+		return nil, errors.New(REQUSTERROR)
+	}
+	if req.Sex != "" {
+		sex := strings.EqualFold(req.Sex, "M") || strings.EqualFold(req.Sex, "F")
+		if !sex {
+			return nil, errors.New(REQUSTERROR + " sex:" + req.Sex)
+		}
+		data["Sex"] = req.Sex
+	}
+	if req.BirthDate != "" {
+		data["BirthDate"] = req.BirthDate
+	}
+	if req.Country != "" {
+		data["Country"] = req.Country
+	}
+	data["MerchantCode"] = req.MerchantCode
+	data["Currency"] = req.Currency
+	data["PlayerId"] = req.PlayerId
+	data["Password"] = req.Password
+
+	return data, nil
+}
+
+// 检查注册参数容错
+func CheckGameUrlParam(req *ReqGame) (map[string]interface{}, error) {
+	/*
+		MerchantCode:  MERCHANTCODE,
+		PlayerId:      "myPlayerId",
+		GameCode:      "Game_01",
+		Language:      "ZH-CN",
+		IpAddress:     "172.16.101.213",
+		ProductWallet: 301,
+	*/
+	data := make(map[string]interface{})
+	if req.MerchantCode == "" {
+		return nil, errors.New(REQUSTERROR)
+	}
+	if req.PlayerId == "" {
+		return nil, errors.New(REQUSTERROR)
+	}
+	if req.GameCode == "" {
+		return nil, errors.New(REQUSTERROR)
+	}
+	if req.Language == "" {
+		return nil, errors.New(REQUSTERROR)
+	}
+	if req.IpAddress == "" {
+		return nil, errors.New(REQUSTERROR)
+	}
+	if req.ProductWallet <= 0 {
+		return nil, errors.New(REQUSTERROR)
+	}
+	if req.Http != "" {
+		data["Http"] = req.Http
+	}
+	if req.IsDownload >= 0 && req.IsDownload < 3 {
+		data["IsDownload"] = req.IsDownload
+	}
+	if req.LobbyURL != "" {
+		data["LobbyURL"] = req.LobbyURL
+	}
+	if req.SupportURL != "" {
+		data["SupportURL"] = req.SupportURL
+	}
+	if req.LogoutURL != "" {
+		data["LogoutURL"] = req.LogoutURL
+	}
+	if req.DepositURL != "" {
+		data["DepositURL"] = req.DepositURL
+	}
+	if req.Tray != "" {
+		data["Tray"] = req.Tray
+	}
+	data["MerchantCode"] = req.MerchantCode
+	data["PlayerId"] = req.PlayerId
+	data["GameCode"] = req.GameCode
+	data["Language"] = req.Language
+	data["IpAddress"] = req.IpAddress
+	data["ProductWallet"] = req.ProductWallet
+	return data, nil
+}

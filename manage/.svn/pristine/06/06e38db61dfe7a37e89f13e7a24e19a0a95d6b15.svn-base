@@ -1,0 +1,113 @@
+package action
+
+import (
+	"github.com/gin-gonic/gin"
+	"github.com/sirupsen/logrus"
+	"golang_game_merchant/global/status"
+	"golang_game_merchant/lib/utils"
+	"golang_game_merchant/model"
+)
+
+type blockReq struct {
+	IP        string `json:"ip"`
+	Area      string `json:"area"`
+	Page      int    `json:"page"`
+	PageCount int    `json:"page_count"`
+}
+
+type blockResp struct {
+	List  []model.RestrictAccess `json:"list"`
+	Total int                    `json:"total"`
+}
+
+func BlockIPAddr(c *gin.Context) {
+	ipAddrOperate(c, "block")
+}
+
+func UnblockIPAddr(c *gin.Context) {
+	ipAddrOperate(c, "unblock")
+}
+
+func BlockSourceArea(c *gin.Context) {
+	sourceAreaOperate(c, "block")
+}
+
+func UnblockSourceArea(c *gin.Context) {
+	sourceAreaOperate(c, "unblock")
+}
+
+// 屏蔽或解除 源IP地址访问
+func ipAddrOperate(c *gin.Context, action string) {
+	merchantID := 1
+
+	var req blockReq
+	if err := c.Bind(&req); err != nil {
+		logrus.Errorf("c.Bind(),%v", err)
+		RespParamErr(c)
+		return
+	}
+
+	//校验ip
+	if req.IP == "" || !utils.RegexpMatch("ip", req.IP) {
+		RespParamErr(c)
+		logrus.Errorf("invalid ip addr")
+		return
+	}
+
+	err := model.IPaddrOperate(model.Db, merchantID, req.IP, action)
+	if err != nil {
+		RespServerErr(c)
+		return
+	}
+
+	RespSuccess(c)
+}
+
+func sourceAreaOperate(c *gin.Context, action string) {
+	merchantID := 1
+
+	var req blockReq
+	if err := c.Bind(&req); err != nil {
+		logrus.Errorf("c.Bind(),%v", err)
+		RespParamErr(c)
+		return
+	}
+
+	//校验ip
+	if req.Area == "" {
+		RespParamErr(c)
+		logrus.Errorf("invalid source location string")
+		return
+	}
+
+	err := model.SourceAreaOperate(model.Db, merchantID, req.Area, action)
+	if err != nil {
+		RespServerErr(c)
+		return
+	}
+
+	RespSuccess(c)
+}
+
+// Post: {"page":1,"page_count":3}
+func ListBlockedSource(c *gin.Context) {
+	merchantID := 1
+
+	var req blockReq
+	err := c.Bind(&req)
+	if err != nil {
+		logrus.Errorf("c.Bind(),%v", err)
+		RespParamErr(c)
+		return
+	}
+
+	req.Page, req.PageCount = InitPage(req.Page, req.PageCount)
+
+	var resp blockResp
+	resp.List, resp.Total, err = model.ListBlockedSource(model.Db, merchantID, req.Page, req.PageCount)
+	if err != nil {
+		RespServerErr(c)
+	}
+
+	RespJson(c, status.OK, resp)
+}

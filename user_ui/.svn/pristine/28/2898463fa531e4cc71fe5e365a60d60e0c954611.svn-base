@@ -1,0 +1,95 @@
+package service
+
+import (
+	"encoding/json"
+	"fmt"
+	"game2/lib/redisclient"
+	//"reflect"
+	"game2/lib/utils"
+
+	"github.com/gomodule/redigo/redis"
+)
+
+func HsetToRedis(key string, field string, value string) error {
+	conn := redisclient.Get()
+
+	//记得销毁本次链连接
+	defer conn.Close()
+
+	_, err := conn.Do("HSET", key, field, value)
+	if err != nil {
+		utils.Log(err, "debug", "")
+		return err
+	}
+	return nil
+}
+
+//Hget获取redis中的信息
+func HgetFromRedis(key string, field string) (map[string]interface{}, error) {
+	m := make(map[string]interface{})
+	conn := redisclient.Get()
+
+	//记得销毁本次链连接
+	defer conn.Close()
+
+	info, err := redis.String(conn.Do("HGET", key, field))
+	if err != nil {
+		utils.Log(err, "debug", "")
+		return m, err
+	}
+	err = json.Unmarshal([]byte(info), &m)
+	if err != nil {
+		fmt.Println(err)
+		utils.Log(err, "debug", "")
+		return m, err
+	}
+	return m, nil
+}
+
+func RedisSet(key string, value string, ex_time int) error {
+	conn := redisclient.Get()
+
+	//记得销毁本次链连接
+	defer conn.Close()
+
+	_, err := conn.Do("SET", key, value, "EX", ex_time)
+	if err != nil {
+		utils.Log(err, "debug", "")
+		return err
+	}
+	return nil
+}
+
+func RedisGetString(key string) (string, error) {
+	conn := redisclient.Get()
+
+	//记得销毁本次链连接
+	defer conn.Close()
+
+	info, err := redis.String(conn.Do("GET", key))
+	if err != nil {
+		utils.Log(err, "debug", "")
+		return info, err
+	}
+	return info, nil
+}
+
+func RedisGetMap(key string) (map[string]interface{}, error) {
+	m := make(map[string]interface{})
+	conn := redisclient.Get()
+
+	//记得销毁本次链连接
+	defer conn.Close()
+
+	info, err := redis.String(conn.Do("GET", key))
+	if err != nil {
+		utils.Log(err, "debug", "")
+		return m, err
+	}
+	err = json.Unmarshal([]byte(info), &m)
+	if err != nil {
+		utils.Log(err, "debug", "")
+		return m, err
+	}
+	return m, nil
+}

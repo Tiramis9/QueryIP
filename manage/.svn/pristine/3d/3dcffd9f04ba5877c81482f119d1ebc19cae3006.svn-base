@@ -1,0 +1,17 @@
+package model
+
+type MerchantWarnLog struct {
+	UserID     int
+	Content    string
+	CreateTime int64
+	IP         string
+	Device     int
+}
+
+func QueryWarningLog() ([]MerchantWarnLog, error) {
+	var m []MerchantWarnLog
+	if err := Db.Find(&m).Error; err != nil {
+		return nil, err
+	}
+	return m, nil
+}

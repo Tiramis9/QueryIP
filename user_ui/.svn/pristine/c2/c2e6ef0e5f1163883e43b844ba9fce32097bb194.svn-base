@@ -1,0 +1,98 @@
+package model
+
+type Message struct {
+	Id          int    `json:"id"`
+	Msg_id      int    `json:"msg_id"`
+	Have_read   int    `json:"have_read"`
+	Create_time string `json:"create_time"`
+	Read_time   string `json:"read_time"`
+	User_id     int    `json:"user_id"`
+	Title       string `json:"title"`
+	Content     string `json:"content"`
+}
+
+type MessageInterface interface {
+	GetMessageList()
+	GetMessageCount()
+	ReadMessage()
+}
+
+func (m Message) GetMessageList(user_id int, page int, pagecount int) interface{} {
+	var messlist []Message
+	/*stmt, err := Db.Prepare("SELECT um.id,um.msg_id,um.have_read,um.create_time,um.read_time,um.user_id,sm.title,sm.content FROM user_message um" +
+		" LEFT JOIN sys_message sm ON sm.id=um.msg_id " + " Where um.user_id=? limit ?,?")
+	defer stmt.Close()
+	if err != nil {
+		fmt.Println(err)
+		return nil
+	}
+	rows, err := stmt.Query(user_id, (page-1)*pagecount, pagecount)
+	defer rows.Close()
+	if err != nil {
+		fmt.Println(err)
+		return nil
+	}
+	for rows.Next() {
+		var conv Message
+		rows.Scan(&conv.Id, &conv.Msg_id, &conv.Have_read, &conv.Create_time, &conv.Read_time, &conv.User_id, &conv.Title, &conv.Content)
+		messlist = append(messlist, conv)
+	}*/
+	return messlist
+}
+
+func (m Message) GetMessageInfo(id int, user_id int) Message {
+	var conv Message
+	/*stmt, err := Db.Prepare("SELECT um.id,um.msg_id,um.have_read,um.create_time,um.read_time,um.user_id,sm.title,sm.content FROM user_message um" +
+		" LEFT JOIN sys_message sm ON sm.id=um.msg_id " + " Where um.id=?")
+	defer stmt.Close()
+	if err != nil {
+		fmt.Println(err)
+		return conv
+	}
+	row := stmt.QueryRow(id)
+	if err != nil {
+		fmt.Println(err)
+		return conv
+	}
+	row.Scan(&conv.Id, &conv.Msg_id, &conv.Have_read, &conv.Create_time, &conv.Read_time, &conv.User_id, &conv.Title, &conv.Content)
+	*/
+	return conv
+}
+
+func (m Message) GetMessageCount(user_id int) int {
+	var total int
+	/*stmt, err := Db.Prepare("SELECT count(um.id) as total FROM user_message um" +
+		" Where um.user_id=?")
+	defer stmt.Close()
+	if err != nil {
+		fmt.Println(err)
+		return 0
+	}
+	row := stmt.QueryRow(user_id)
+	//总计
+	row.Scan(&total)
+	fmt.Println("total ", total)*/
+	return total
+}
+
+func (m Message) ReadMessage(id int, time int64) bool {
+	//对于未阅读的消息更新
+	/*stmt, err := Db.Prepare("UPDATE user_message SET have_read=1,read_time=? WHERE id=? AND have_read=0")
+	defer stmt.Close()
+	if err != nil {
+		fmt.Println(err)
+		return false
+	}
+	ret, err := stmt.Exec(time, id)
+	if err != nil {
+		fmt.Println(err)
+		return false
+	}
+	if affectd_rows, err := ret.RowsAffected(); nil == err {
+		fmt.Println(affectd_rows)
+		return true
+	} else {
+		return false
+	}*/
+	return true
+}

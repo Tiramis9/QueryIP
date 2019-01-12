@@ -1,0 +1,49 @@
+package encrypt
+
+import (
+	"bytes"
+	"crypto/aes"
+	"crypto/cipher"
+	"crypto/md5"
+	"encoding/hex"
+)
+
+func PKCS5Padding(cipher []byte, blockSize int) []byte {
+	padding := blockSize - len(cipher)%blockSize
+	pad := bytes.Repeat([]byte{byte(padding)}, padding)
+	return append(cipher, pad...)
+}
+
+func PKCS5UnPadding(origData []byte) []byte {
+	length := len(origData)
+	unPadding := int(origData[length-1])
+	return origData[:(length - unPadding)]
+}
+
+func AESEncrypt(src, key string) string {
+	byteKey := []byte(key)
+	block, _ := aes.NewCipher(byteKey)
+	blockSize := block.BlockSize()
+	origData := PKCS5Padding([]byte(src), blockSize)
+	blockMode := cipher.NewCBCEncrypter(block, byteKey[:blockSize])
+	crypt := make([]byte, len(origData))
+	blockMode.CryptBlocks(crypt, origData)
+	return string(crypt)
+}
+
+func AESDecrypt(src, key string) string {
+	byteKey := []byte(key)
+	block, _ := aes.NewCipher(byteKey)
+	blockSize := block.BlockSize()
+	blockMode := cipher.NewCBCDecrypter(block, byteKey[:blockSize])
+	origData := make([]byte, len(src))
+	blockMode.CryptBlocks(origData, []byte(src))
+	origData = PKCS5UnPadding(origData)
+	return string(origData)
+}
+
+func MD5(src string) string {
+	h := md5.New()
+	h.Write([]byte(src))
+	return hex.EncodeToString(h.Sum(nil))
+}

@@ -1,0 +1,383 @@
+package model
+
+import (
+	"errors"
+
+	"github.com/jinzhu/gorm"
+)
+
+var (
+	REQUESTUSERERROR = errors.New("接收人不存在")
+)
+
+type (
+	// user_message表
+	UserMessage struct {
+		UserId     int   `json:"user_id"`
+		MsgId      int   `json:"msg_id"`
+		CreateTime int64 `json:"create_time"`
+		UpdateTime int64 `json:"update_time"`
+		HaveRead   int   `json:"have_read"`
+		ReadTime   int   `json:"read_time"`
+		MerchantId int   `json:"merchant_id"`
+	}
+	// 代理消息表
+	AgentMessage struct {
+		AgentId    int   `json:"agent_id"`
+		MsgId      int   `json:"msg_id"`
+		CreateTime int64 `json:"create_time"`
+		UpdateTime int64 `json:"update_time"`
+		HaveRead   int   `json:"have_read"`
+		ReadTime   int   `json:"read_time"`
+		MerchantId int   `json:"merchant_id"`
+	}
+	Message struct {
+		Id             int    `json:"id"`
+		Type           int    `json:"type"`
+		ToAgent        string `json:"to_agent"`
+		CreateTime     int64  `json:"create_time"`
+		ToUser         string `json:"to_user"`
+		SendMerchantId int    `json:"send_merchant_id"`
+		ToMerchantId   int    `json:"to_merchant_id"`
+		UpdateTime     int64  `json:"update_time"`
+		Title          string `json:"title"`
+		Content        string `json:"content"`
+	}
+	// sys_message表
+	SysMessage struct {
+		Message
+	}
+	// 查询user表，缓存信息
+	TempQusetUser struct {
+		Id         int    `json:"id"`
+		MerchantId int    `json:"merchant_id"`
+		UserName   string `json:"user_name"`
+		ClassName  string `json:"class_name"`
+		Status     string `json:"status"`
+		GroupName  string `json:"group_name"`
+		ClassId    string `json:"class_id"`
+		GroupId    string `json:"group_id"`
+	}
+	//  商户用户层级表 (渠道)
+	GETMerchantUserClass struct {
+		Id         int
+		MerchantId int
+		ClassName  string
+	}
+	// 商户用户等级表 list(群）
+	GETMerchantUserGroup struct {
+		Id         int
+		MerchantId int
+		GroupName  string
+	}
+)
+
+func GetGroupListInfo(db *gorm.DB) ([]MerchantUserGroup, error) {
+	var userGrouplist []MerchantUserGroup
+	if err := db.Debug().Table("merchant_user_group").Select("id,merchant_id,group_name").Find(&userGrouplist).Error; err != nil {
+		if err == gorm.ErrRecordNotFound {
+			return nil, err
+		}
+		return nil, err
+	}
+	return userGrouplist, nil
+
+}
+
+func GetClassListInfo(db *gorm.DB) ([]MerchantUserClass, error) {
+	var userClasslist []MerchantUserClass
+	if err := db.Debug().Table("merchant_user_class").Select("id,merchant_id,class_name").Find(&userClasslist).Error; err != nil {
+		if err == gorm.ErrRecordNotFound {
+			return nil, err
+		}
+		return nil, err
+	}
+	return userClasslist, nil
+
+}
+
+func GetMessageInfoList(db *gorm.DB, page int, pageCount int, msg map[string]interface{}) ([]Message, int, error) {
+	var list []Message
+	if err := db.Debug().Table("sys_message").Select("type,id,to_agent,create_time,send_merchant_id,update_time,to_merchant_id,to_user,title,content").Where("send_merchant_id=? AND type=?",
+		msg["merchant_id"], msg["type"]).Offset((page - 1) * pageCount).Limit(pageCount).Find(&list).Error; err != nil {
+		if err == gorm.ErrRecordNotFound {
+			return nil, 0, err
+		}
+		return nil, 0, err
+	}
+	var count int
+	if err := db.Table(`sys_message`).Where("send_merchant_id=? AND type=?",
+		msg["merchant_id"], msg["type"]).Count(&count).Error; err != nil {
+		return nil, 0, err
+	}
+	return list, count, nil
+}
+
+/*
+SELECT
+	um.id,um.msg_id,um.have_read,um.create_time,um.read_time,um.user_id,sm.title,sm.content
+FROM
+	user_message AS um
+LEFT JOIN
+	sys_message AS sm ON sm.id=um.msg_id
+WHERE
+	(um.user_id='{id}')
+LIMIT {limit} OFFSET {offset}
+*/
+func GetMessageList(db *gorm.DB, userId int, page int, pageCount int) ([]Message, error) {
+
+	var msgList []Message
+	if err := db.Table(`user_message AS um`).Joins(`
+		LEFT JOIN sys_message AS sm ON sm.id=um.msg_id`).Select(`
+		um.id,um.msg_id,um.have_read,um.create_time,um.read_time,um.user_id,sm.title,sm.content
+	`).Where(`um.user_id=?`, userId).Offset((page - 1) * pageCount).Limit(pageCount).Find(&msgList).Error; err != nil {
+		if err == gorm.ErrRecordNotFound {
+			return nil, nil
+		}
+		return nil, err
+	}
+	return msgList, nil
+}
+
+// SELECT count(*) FROM `user_message`  WHERE (user_id='{id}')
+func GetMessageCount(db *gorm.DB, userId int) (int, error) {
+	var count int
+	if err := db.Table(`user_message`).Where(`user_id=?`, userId).Count(&count).Error; err != nil {
+		return 0, err
+	}
+
+	return count, nil
+}
+
+// 查找User表 SQL语句见表内注释
+// 检查user 信息接收的用户是否存在，如存在，返回商户ID与用户ID
+func MessageUserAppointAddUserCheck(db *gorm.DB, user []string) (string, map[int]int, error) {
+	var temp TempQusetUser
+	var strList string
+	merchId := make(map[int]int)
+	/*
+		select id merchant_id  user_name from user where "id=?",id
+	*/
+	for _, u := range user {
+		if err := db.Debug().Table("user").Select([]string{"user_name,id,merchant_id"}).Where("user_name = ?",
+			u).Scan(&temp).Error; err != nil {
+			if err == gorm.ErrRecordNotFound {
+				return "", nil, REQUESTUSERERROR
+			}
+			return "", nil, err
+		}
+		strList += temp.UserName + ","
+		merchId[temp.Id] = temp.MerchantId
+	}
+	if strList == "" || merchId == nil {
+		return "", nil, REQUESTUSERERROR
+	}
+	return strList, merchId, nil
+}
+
+// 检查user 信息接收的用户是否存在，如存在，返回商户ID与用户ID SQL语句见表内注释
+func MessageUserAgentAddUserCheck(db *gorm.DB, user []string) (string, map[int]int, error) {
+	var temp TempQusetUser
+	var strList string
+	merchId := make(map[int]int)
+	/*
+		select id merchant_id  user_name from agent where "id=?",id
+	*/
+	for _, u := range user {
+		if err := db.Debug().Table("agent").Select([]string{"user_name,id,merchant_id"}).Where("user_name = ?",
+			u).Scan(&temp).Error; err != nil {
+			if err == gorm.ErrRecordNotFound {
+				return "", nil, REQUESTUSERERROR
+			}
+			return "", nil, err
+		}
+		strList += temp.UserName + ","
+		merchId[temp.Id] = temp.MerchantId
+	}
+	if strList == "" || merchId == nil {
+		return "", nil, REQUESTUSERERROR
+	}
+	strList = strList[:len(strList)-1]
+	return strList, merchId, nil
+}
+
+// 检查 (merchant_user_group )信息接收的用户是否存在，阶级判断, 返回商户ID与用户ID，group []string SQL语句见表内注释
+func MessageUserAppointAddClassCheck(db *gorm.DB, class []string, group []string) (string, map[int]int, error) {
+	var tempClass TempQusetUser
+	var tempGroup TempQusetUser
+	var list []TempQusetUser
+	var arryClass []int
+	var arryGroup []int
+	var strList string
+	var merchId map[int]int
+	merchId = make(map[int]int)
+	// 查询merchant_user_class，容错class等级，判断是否存在，取接受方字段
+	/*
+		select id class_name from merchant_user_class where "id=?",id
+	*/
+	for _, c := range class {
+		if err := db.Debug().Table("merchant_user_class").Select("id,class_name").Where("id = ?",
+			c).Scan(&tempClass).Error; err != nil {
+			if err == gorm.ErrRecordNotFound {
+				return "", nil, REQUESTUSERERROR
+			}
+			return "", nil, err
+		}
+		if tempClass.Id != -1 {
+			strList += tempClass.ClassName + ","
+			arryClass = append(arryClass, tempClass.Id)
+		}
+	}
+	// 查询merchant_user_group 容错Group层级，判断是否存在，取接受方字段
+	for _, g := range group {
+		if err := db.Debug().Table("merchant_user_group").Select("id,group_name").Where("id = ?",
+			g).Scan(&tempGroup).Error; err != nil {
+			if err == gorm.ErrRecordNotFound {
+				return "", nil, REQUESTUSERERROR
+			}
+			return "", nil, err
+		}
+		if tempGroup.Id != -1 {
+			strList += tempGroup.GroupName + ","
+			arryGroup = append(arryGroup, tempGroup.Id)
+		}
+	}
+	// 查询对应user表中对应商户ID与USERID
+	if err := db.Debug().Table("user").Select("id,merchant_id").Where("class_id IN (?) AND status = 1",
+		arryClass).Or("group_id IN (?) ", arryGroup).Scan(&list).Error; err != nil {
+		return "", nil, err
+	}
+	// 提取商户的ID与USERID
+	for _, merch := range list {
+		merchId[merch.Id] = merch.MerchantId
+	}
+
+	// 容错接受方是否有效
+	if strList == "" {
+		return "", nil, REQUESTUSERERROR
+	}
+	strList = strList[:len(strList)-1]
+	return strList, merchId, nil
+}
+
+// 检查 ( merchant_agent_class)信息接收的用户是否存在，阶级判断, 返回商户ID与用户ID，group []string SQL语句见表内注释
+func MessageUserAgentAddClassCheck(db *gorm.DB, class []string) (string, map[int]int, error) {
+	var tempClass TempQusetUser
+	var list []TempQusetUser
+	var arryClass []int
+	var strList string
+	var merchId map[int]int
+	merchId = make(map[int]int)
+	// 查询merchant_agent_class，容错class等级，判断是否存在
+	/*
+		select id class_name from merchant_agent_class where "id=?",id
+	*/
+
+	for _, c := range class {
+		if err := db.Debug().Table("merchant_agent_class").Select("id,class_name").Where("id = ?",
+			c).Scan(&tempClass).Error; err != nil {
+			if err == gorm.ErrRecordNotFound {
+				return "", nil, REQUESTUSERERROR
+			}
+			return "", nil, err
+		}
+		if tempClass.Id > 0 {
+			strList += tempClass.ClassName + ","
+			arryClass = append(arryClass, tempClass.Id)
+		}
+	}
+	// 查询对应user表中对应商户ID与USERID
+	/*
+		select id merchant_id from agent where "class_id=?,statuas=1",arryClass[]
+	*/
+	if err := db.Debug().Table("agent").Select("id,merchant_id").Where("class_id IN (?)",
+		arryClass).Find(&list).Error; err != nil {
+		return "", nil, err
+	}
+	// 提取商户的ID与USERID
+	for _, merch := range list {
+		merchId[merch.Id] = merch.MerchantId
+	}
+	// 容错接受方是否有效
+	if strList == "" {
+		return "", nil, REQUESTUSERERROR
+	}
+	strList = strList[:len(strList)-1]
+	return strList, merchId, nil
+}
+
+// 插入SQL (sys_message 与UserMessage)信息
+func (in SysMessage) MessageUserAddInfo(db *gorm.DB, msgMerchId map[int]int) error {
+	if err := db.Debug().Create(&in).Error; err != nil {
+		return err
+	}
+	var time Message
+	if err := db.Debug().Table("sys_message").Select("id").Where("content=? AND title=? AND to_user=?",
+		in.Content, in.Title, in.ToUser).Find(&time).Error; err != nil {
+		return err
+	}
+	for point, merchId := range msgMerchId {
+		aInfo := UserMessage{
+			UserId:     point,
+			MsgId:      time.Id,
+			CreateTime: in.CreateTime,
+			UpdateTime: in.UpdateTime,
+			HaveRead:   0,
+			ReadTime:   0,
+			MerchantId: merchId,
+		}
+		if err := db.Debug().Create(&aInfo).Error; err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+// 插入SQL (sys_message 与AgentMessage)信息
+func (in SysMessage) AgentUserAddInfo(db *gorm.DB, msgMerchId map[int]int) error {
+	if err := db.Debug().Create(&in).Error; err != nil {
+		return err
+	}
+	var time Message
+	if err := db.Debug().Table("sys_message").Select("id").Where("content=? AND title=? AND to_user=?",
+		in.Content, in.Title, in.ToUser).Find(&time).Error; err != nil {
+		return err
+	}
+	for point, merchId := range msgMerchId {
+		aInfo := AgentMessage{
+			AgentId:    point,
+			MsgId:      time.Id,
+			CreateTime: in.CreateTime,
+			UpdateTime: in.UpdateTime,
+			HaveRead:   0,
+			ReadTime:   0,
+			MerchantId: merchId,
+		}
+		if err := db.Debug().Create(&aInfo).Error; err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+/*
+UPDATE
+	`user_message`
+SET
+	`have_read` = '1', `read_time` = '1541574995'
+WHERE
+	(`user_message`.`id` = '{id}') AND (`user_message`.`have_read` = '0')
+*/
+func ReadMessage(db *gorm.DB, id int, time int64) (bool, error) {
+	if err := db.Table(`user_message`).Where(map[string]interface{}{
+		"id":        id,
+		"have_read": 0,
+	}).Updates(map[string]interface{}{
+		"have_read": 1,
+		"read_time": time,
+	}).Error; err != nil {
+		return false, err
+	}
+
+	return true, nil
+}

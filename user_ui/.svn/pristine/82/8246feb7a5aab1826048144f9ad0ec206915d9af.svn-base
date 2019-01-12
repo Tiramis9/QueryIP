@@ -1,0 +1,165 @@
+package action
+
+import (
+	"fmt"
+	"game2/model"
+	"net/http"
+	"strconv"
+	"time"
+	"game2/utils"
+
+	"github.com/gin-gonic/gin"
+)
+
+//资金列表
+func UserBillList(c *gin.Context) {
+	utils.Log("112121", "debug", "")
+	var data interface{}
+	total := 0
+	next_page := 1
+	userid, ok := c.Get("user_id")
+	if !ok {
+		res := gin.H{"code": 0, "data": data, "msg": "fail"}
+		c.JSON(http.StatusOK, res)
+		return
+	}
+	user_id := userid.(int)
+	page := c.PostForm("page")
+	pagecount := c.PostForm("page_count")
+	starttime := c.PostForm("start_time")
+	endtime := c.PostForm("end_time")
+
+	//检查page、pagecount是否为""
+	page = utils.CheckEmptyStr(page, utils.DEFAULT_PAGE)
+	pagecount = utils.CheckEmptyStr(pagecount, utils.DEFAULT_PAGECOUNT)
+	starttime = utils.CheckEmptyStr(starttime, utils.SevenDay())
+	endtime = utils.CheckEmptyStr(endtime, utils.Now())
+	//转为整形
+	page_i, err := strconv.Atoi(page)
+	if err != nil {
+		fmt.Println(err)
+		res := gin.H{"code": 0, "data": data, "msg": "fail"}
+		c.JSON(http.StatusOK, res)
+		return
+	}
+	page_count_i, err := strconv.Atoi(pagecount)
+	if err != nil {
+		fmt.Println(err)
+		res := gin.H{"code": 0, "data": data, "msg": "fail"}
+		c.JSON(http.StatusOK, res)
+		return
+	}
+	start_time, err := strconv.Atoi(starttime)
+	if err != nil {
+		fmt.Println(err)
+		res := gin.H{"code": 0, "data": data, "msg": "fail"}
+		c.JSON(http.StatusOK, res)
+		return
+	}
+	end_time, err := strconv.Atoi(endtime)
+	if err != nil {
+		fmt.Println(err)
+		res := gin.H{"code": 0, "data": data, "msg": "fail"}
+		c.JSON(http.StatusOK, res)
+		return
+	}
+	userbill := model.UserBill{User_id: user_id}
+	ch := make(chan int)
+	defer close(ch)
+	//获取列表
+	go func() {
+		billlist := userbill.GetUserBillListByUserId(page_i, page_count_i, start_time, end_time)
+		data = billlist
+		ch <- 1
+	}()
+	//获取总数
+	go func() {
+		total = userbill.GetUserBillCount(start_time, end_time)
+		next_page = page_i + 1
+		ch <- 1
+	}()
+	//等待通道数结束
+	for i := 0; i < 2; i++ {
+		<-ch
+	}
+	res := gin.H{"code": 1, "data": data, "msg": "ok", "total": total, "next_page": next_page}
+	c.JSON(http.StatusOK, res)
+}
+
+func ApplayWithdraw(c *gin.Context) {
+	var data interface{}
+	userid, ok := c.Get("user_id")
+	if !ok {
+		res := gin.H{"code": 0, "data": data, "msg": "fail"}
+		c.JSON(http.StatusOK, res)
+		return
+	}
+	user_id := userid.(int)
+
+	money_str := c.PostForm("money")
+	id_str := c.PostForm("id")
+	//pay_pass_str := c.PostForm("pay_pass")
+
+	//转为整形
+	money, err := strconv.ParseFloat(money_str, 64)
+	if err != nil {
+		fmt.Println(err)
+		res := gin.H{"code": 0, "data": data, "msg": "fail"}
+		c.JSON(http.StatusOK, res)
+		return
+	}
+	id, err := strconv.Atoi(id_str)
+	if err != nil {
+		fmt.Println(err)
+		res := gin.H{"code": 0, "data": data, "msg": "fail"}
+		c.JSON(http.StatusOK, res)
+		return
+	}
+	user_bank_model := model.UserBank{}
+	//根据id获取用户卡号
+	userbank := user_bank_model.GetUserBankInfo(id, user_id)
+	res := gin.H{"code": 0, "msg": "fail"}
+	if userbank.Id != 0 {
+		now := time.Now().Unix()
+		userwithdraw := model.UserWithdraw{User_id: user_id, Money: money, Create_time: now, Card_no: userbank.Card_no}
+		ok, msg := userwithdraw.ApplayWithdraw()
+		if ok {
+			res = gin.H{"code": 1, "data": data, "msg": "ok"}
+		} else {
+			res["msg"] = msg
+		}
+	}
+	c.JSON(http.StatusOK, res)
+}
+
+//账户统计
+func BillTotal(c *gin.Context) {
+	userid, ok := c.Get("user_id")
+	if !ok {
+		res := gin.H{"code": 0, "data": nil, "msg": "fail"}
+		c.JSON(http.StatusOK, res)
+		return
+	}
+	user_id := userid.(int)
+	//查询用户的资金明细统计
+	user_bill_model := model.UserBill{User_id: user_id}
+	list := user_bill_model.GetUserBillTotalByUserId()
+	data := map[string]interface{}{"user_id": user_id, "recharge": "0.00", "withdraw": "0.00", "bonus": "0.00", "rebate": "0.00"}
+	//生成map
+	for _, v := range list {
+		if v.Code == 100 {
+			data["recharge"] = v.Total
+		}
+		if v.Code == 200 {
+			data["withdraw"] = v.Total
+		}
+		if v.Code == 400 {
+			data["bonus"] = v.Total
+		}
+		if v.Code == 500 {
+			data["rebate"] = v.Total
+		}
+	}
+	res := gin.H{"code": 1, "data": data, "msg": "ok"}
+	c.JSON(http.StatusOK, res)
+}

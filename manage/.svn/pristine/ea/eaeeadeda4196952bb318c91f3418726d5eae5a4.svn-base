@@ -1,0 +1,291 @@
+package action
+
+import (
+	"errors"
+	"fmt"
+	"golang_game_merchant/global/status"
+	"golang_game_merchant/model"
+	"net/http"
+	"strings"
+	"time"
+
+	//"reflect"
+
+	"strconv"
+
+	"github.com/gin-gonic/gin"
+	"github.com/sirupsen/logrus"
+)
+
+type (
+	//会员结收消息结构体
+	MessageInfoRequst struct {
+		Content    string `json:"content"`
+		Title      string `json:"title"`
+		UserName   string `json:"username"`
+		ClassId    string `json:"class_id"`    // 层级id
+		Groupid    string `json:"group_id"`    // 等级id
+		MerchantID int    `json:"merchant_id"` // 传入参数未容错
+		Type       int    `json:"type"`        // '消息类型0.商户消息; 1.会员站内信; 2.代理站内信',
+	}
+	// (消息管理)
+	MessageInfo struct {
+		Content    interface{} `json:"content"`
+		CreateTime interface{} `json:"create_time"`
+		Type       interface{} `json:"type"`
+		Title      interface{} `json:"title"`
+		ToUser     interface{} `json:"to_user"`
+		//	EndTime   interface{} `json:"end_time"`
+		//MerchantID interface{} `json:"merchant_id"`
+	}
+	MessageResponse struct {
+		List  []MessageInfo `json:"list"`
+		Total int           `json:"total"`
+	}
+	MessageInfoListRequst struct {
+		//Token     string `json:"token"`
+		ToUser     string `json:"to_user"`
+		Type       int    `json:"type"`
+		Page       int    `json:"page"`        //页码
+		PageCount  int    `json:"page_count"`  //每页显示的数量
+		MerchantID int    `json:"merchant_id"` // 传入参数未容错
+	}
+)
+
+func MessageAddParamCheck(req *MessageInfoRequst) error {
+	if req.Content == "" {
+		return errors.New("request content error")
+	}
+	if req.Title == "" {
+		return errors.New("request Title error")
+	}
+	/*
+		if req.Type <= 0 || req.Type >= 4 {
+			return errors.New("reques Type error")
+		}
+	*/
+	return nil
+}
+
+// 添加会员接收消息 message_to_user_add
+func Message2UserAdd(c *gin.Context) {
+	var request MessageInfoRequst
+
+	if err := c.Bind(&request); err != nil {
+		RespParamErr(c)
+		logrus.Error(err)
+		return
+	}
+	// 参数入参检查
+	err := MessageAddParamCheck(&request)
+	if err != nil {
+		RespParamErr(c)
+		logrus.Error(err)
+		return
+	}
+	timeUnix := time.Now().Unix()
+	if request.UserName != "" {
+		tx := model.TxBegin()
+		stringList := strings.Split(request.UserName, ",")
+		touserList, joinId, err := model.MessageUserAppointAddUserCheck(tx, stringList)
+		if err != nil {
+			tx.Rollback()
+			if err == model.REQUESTUSERERROR {
+				RespParamErr(c)
+				logrus.Error(err)
+				return
+			}
+			RespServerErr(c)
+			logrus.Error(err)
+			return
+		}
+		aInfo := model.SysMessage{
+			Message: model.Message{
+				Content:        request.Content,
+				Title:          request.Title,
+				Type:           request.Type,
+				SendMerchantId: request.MerchantID,
+				CreateTime:     timeUnix,
+				UpdateTime:     timeUnix,
+				ToUser:         touserList,
+			},
+		}
+		// 插入多条消息
+		if err := aInfo.MessageUserAddInfo(model.Db, joinId); err != nil {
+			tx.Rollback()
+			RespServerErr(c)
+			logrus.Error(err)
+			return
+		}
+		tx.Commit()
+		RespSuccess(c)
+		return
+	}
+	tx := model.TxBegin()
+	stringClass := strings.Split(request.ClassId, ",")
+	stringGroup := strings.Split(request.Groupid, ",")
+	touserList, joinId, err := model.MessageUserAppointAddClassCheck(tx, stringClass, stringGroup)
+	if err != nil {
+		tx.Rollback()
+		if err == model.REQUESTUSERERROR {
+			RespParamErr(c)
+			logrus.Error(err)
+			return
+		}
+		RespServerErr(c)
+		logrus.Error(err)
+		return
+	}
+	aInfo := model.SysMessage{
+		Message: model.Message{
+			Content:        request.Content,
+			Title:          request.Title,
+			Type:           request.Type,
+			SendMerchantId: request.MerchantID,
+			CreateTime:     timeUnix,
+			UpdateTime:     timeUnix,
+			ToUser:         touserList,
+		},
+	}
+	// 插入多条消息
+	if err := aInfo.MessageUserAddInfo(model.Db, joinId); err != nil {
+		tx.Rollback()
+		RespServerErr(c)
+		logrus.Error(err)
+		return
+	}
+	tx.Commit()
+	RespSuccess(c)
+}
+
+func MessageListParamCheck(request *MessageInfoListRequst) (map[string]interface{}, error) {
+	msg := make(map[string]interface{})
+	if request.Type < 0 || request.Type >= 3 {
+		return nil, errors.New("request Type parameter error ")
+	}
+	if request.Page < 1 {
+		request.Page = 1
+	}
+	if request.PageCount <= 0 {
+		return nil, errors.New("page count parameter error")
+	}
+	if request.ToUser == "" {
+		return nil, errors.New("page ToUser parameter error")
+	}
+	msg["to_user"] = request.ToUser
+	msg["type"] = request.Type
+	msg["page"] = request.Page
+	msg["page_count"] = request.PageCount
+	msg["merchant_id"] = request.MerchantID
+	return msg, nil
+}
+
+//消息列表
+func MessageList(c *gin.Context) {
+	var request MessageInfoListRequst
+	if err := c.Bind(&request); err != nil {
+		RespParamErr(c)
+		logrus.Error(err)
+		return
+	}
+	// 参数入参检查
+	msg, err := MessageListParamCheck(&request)
+	if err != nil {
+		RespParamErr(c)
+		logrus.Error(err)
+		return
+	}
+	list, count, err := model.GetMessageInfoList(model.Db, request.Page, request.PageCount, msg)
+	if err != nil {
+		RespServerErr(c)
+		logrus.Error(err)
+		return
+	}
+	fmt.Println(list, count)
+	resp := MessageResponse{
+		List:  make([]MessageInfo, 0),
+		Total: count,
+	}
+	for i := range list {
+		temp := MessageInfo{
+			Content:    list[i].Content,
+			CreateTime: list[i].CreateTime,
+			Type:       list[i].Type,
+			Title:      list[i].Title,
+			ToUser:     list[i].ToUser,
+		}
+		resp.List = append(resp.List, temp)
+	}
+	RespJson(c, status.OK, resp)
+	/*
+		var data interface{}
+		total := 0
+		next_page := 1
+		userid, ok := c.Get("user_id")
+		if !ok {
+			res := gin.H{"code": 0, "data": data, "msg": "fail"}
+			c.JSON(http.StatusOK, res)
+			return
+		}
+		//user_id := 1
+		user_id := userid.(int)
+		page := c.PostForm("page")
+		pagecount := c.PostForm("page_count")
+		//检查page、pagecount是否为""
+		page = utils.CheckEmptyStr(page, utils.DEFAULT_PAGE)
+		pagecount = utils.CheckEmptyStr(pagecount, utils.DEFAULT_PAGECOUNT)
+		//转为整形
+		page_i, err := strconv.Atoi(page)
+		if err != nil {
+			fmt.Println(err)
+			res := gin.H{"code": 0, "data": data, "msg": "fail"}
+			c.JSON(http.StatusOK, res)
+			return
+		}
+		page_count_i, err := strconv.Atoi(pagecount)
+		if err != nil {
+			fmt.Println(err)
+			res := gin.H{"code": 0, "data": data, "msg": "fail"}
+			c.JSON(http.StatusOK, res)
+			return
+		}
+		ch := make(chan int)
+		defer close(ch)
+		//获取列表
+		go func() {
+			messlist, _ := model.GetMessageList(model.Db, user_id, page_i, page_count_i)
+			data = messlist
+			ch <- 1
+		}()
+		//获取总数
+		go func() {
+			total, _ = model.GetMessageCount(model.Db, user_id)
+			next_page = page_i + 1
+			ch <- 1
+		}()
+		//等待通道数结束
+		for i := 0; i < 2; i++ {
+			<-ch
+		}
+		res := gin.H{"code": 1, "data": data, "msg": "ok", "total": total, "next_page": next_page}
+		c.JSON(http.StatusOK, res)
+	*/
+}
+
+//读取消息
+func MessageRead(c *gin.Context) {
+
+	id := c.PostForm("id")
+	id_i, err := strconv.Atoi(id)
+	if err != nil {
+		fmt.Println(err)
+		c.JSON(http.StatusOK, gin.H{"code": "0", "msg": "fail"})
+		return
+	}
+	ok, _ := model.ReadMessage(model.Db, id_i, 1121212)
+	res := gin.H{"code": "0", "msg": "fail"}
+	if ok {
+		res = gin.H{"code": "1", "msg": "ok"}
+	}
+	c.JSON(http.StatusOK, res)
+}
