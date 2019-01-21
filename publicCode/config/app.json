@@ -1,0 +1,38 @@
+{
+    "server": {
+        "http": {
+            "port": 9876
+        }
+    },
+
+    "db": {
+        "driver": "mysql",
+        "host": "127.0.0.1",
+        "port": 3306,
+        "user": "juxing",
+        "password": "**",
+        "name": "**"
+      },
+    
+    "redis": {
+        "type": "tcp",
+        "host": "127.0.0.1",
+        "port": 6000,
+        "database": "0",
+        "password": "123"
+    },
+
+    "log":{
+        "filename":"./ggm.log",
+        "maxsize":10,
+        "maxage":1,    
+        "maxbackups":3,
+        "compress":"true",
+        "localtime":"true"
+    },
+
+    "page":{
+        "page":1,
+        "pagecount":10
+    }
+}
